@@ -16,6 +16,7 @@ ACustomPlayerController::ACustomPlayerController()
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Hand;
 }
+//-------------------------------------------------------------------------------------------------
 
 void ACustomPlayerController::BeginPlay()
 {
@@ -31,6 +32,7 @@ void ACustomPlayerController::BeginPlay()
 		if (GameMode == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "GameMode cast failed");
 	}
 }
+//-------------------------------------------------------------------------------------------------
 
 void ACustomPlayerController::SetupInputComponent()
 {
@@ -43,6 +45,7 @@ void ACustomPlayerController::SetupInputComponent()
 	InputComponent->BindAction("SpawnAI_0", IE_Pressed, this, &ACustomPlayerController::SpawnAI_0);
 	InputComponent->BindAction("SpawnAI_1", IE_Pressed, this, &ACustomPlayerController::SpawnAI_1);
 }
+//-------------------------------------------------------------------------------------------------
 
 void ACustomPlayerController::SelectionPressed()
 {
@@ -52,6 +55,7 @@ void ACustomPlayerController::SelectionPressed()
 		HUD->bStartSelecting = true;
 	}
 }
+//-------------------------------------------------------------------------------------------------
 
 void ACustomPlayerController::SelectionReleased()
 {
@@ -61,6 +65,7 @@ void ACustomPlayerController::SelectionReleased()
 		SelectedActors = HUD->SelectedActorsDragged;
 	}
 }
+//-------------------------------------------------------------------------------------------------
 
 void ACustomPlayerController::MoveReleased()
 {
@@ -82,8 +87,7 @@ void ACustomPlayerController::MoveReleased()
 			MoveLocation.Y = HitResult.Location.Y + n % 2 * 100;
 			//UAIBlueprintHelperLibrary::SimpleMoveToLocation(SelectedActors[i]->GetController(), MoveLocation);
 			ACustomAIController* AIController = (ACustomAIController*)SelectedActors[i]->GetController();
-			AIController->MoveToLocation(MoveLocation, UPathFollowingComponent::DefaultAcceptanceRadius, true, true, false, false, NULL, true);
-			SelectedActors[i]->MoveCommand = true;
+			AIController->CommandMoveTo(MoveLocation);
 
 			n++;
 
@@ -91,10 +95,11 @@ void ACustomPlayerController::MoveReleased()
 		}
 	}
 }
+//-------------------------------------------------------------------------------------------------
 
 void ACustomPlayerController::SpawnAI(int _Team)
 {
-	if (GameMode)
+	if (GameMode) // FIX: Remove GameMode, it is replaced by GameInstance
 	{
 		FVector Location = LastHit;
 		Location.X += 100;
@@ -121,14 +126,16 @@ void ACustomPlayerController::SpawnAI(int _Team)
 		if (Actor == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Spawn failed");
 	}
 }
-
+//-------------------------------------------------------------------------------------------------
 
 void ACustomPlayerController::SpawnAI_0()
 {
 	SpawnAI(0);
 }
+//-------------------------------------------------------------------------------------------------
 
 void ACustomPlayerController::SpawnAI_1()
 {
 	SpawnAI(1);
 }
+//-------------------------------------------------------------------------------------------------

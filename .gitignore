@@ -1,3 +1,12 @@
+# Block all files and folders in \Packs
+Content/Packs/**
+# Unblock all folders in \Packs
+!Content/Packs/**/
+# Unblock selected content
+#!Content/Packs/StarterContent
+
+
+# Initial ignores
 # Visual Studio 2015 user specific files
 .vs/
 

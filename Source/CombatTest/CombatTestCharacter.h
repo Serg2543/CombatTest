@@ -16,7 +16,6 @@ public:
 	ACombatTestCharacter();
 
 	// Called every frame.
-	virtual void Tick(float DeltaSeconds) override;
 
 	/** Returns TopDownCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
@@ -36,17 +35,11 @@ public:
 	USkeletalMeshComponent* MeshBody = NULL;
 	UMaterialInstanceDynamic* MaterialBodyTeam0 = NULL, *MaterialBodyTeam1 = NULL, *MaterialBodyDead = NULL;
 
-	bool MoveCommand = false; // Unit was given an order to move to location rather than chase an enemy. Make a Enum of orders?
-
 protected:
 	class ACustomAIController *CustomAIController; // Store it, so it doesn't have to be found every tick. Initialize in BeginPlay
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 	virtual void BeginDestroy() override;
-
-	ACombatTestCharacter* Target = NULL;
-	float  AcquisitionRange = 10000; // Set for the whole world for now
-	void AcquireTarget();
-
 
 private:
 	/** Top down camera */

@@ -65,13 +65,9 @@ ACombatTestCharacter::ACombatTestCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned; // VOODOO: required for MoveTo to work
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
-
-void ACombatTestCharacter::BeginDestroy()
-{
-	Super::BeginDestroy();
-}
+//-------------------------------------------------------------------------------------------------
 
 void ACombatTestCharacter::Tick(float DeltaSeconds)
 {
@@ -82,70 +78,14 @@ void ACombatTestCharacter::Tick(float DeltaSeconds)
 		CorpseTimer -= DeltaSeconds;
 		if (CorpseTimer <= 0) Destroy(); // Can use another phase: fade out, fall through the floor, etc
 	}
-	else
-	{
-		/*
-		FString s = "";
-		if (CustomAIController->GetMoveStatus() == EPathFollowingStatus::Idle) s = "Idle";
-		else if (CustomAIController->GetMoveStatus() == EPathFollowingStatus::Moving) s = "Moving";
-		else if (CustomAIController->GetMoveStatus() == EPathFollowingStatus::Paused) s = "Paused";
-		else if (CustomAIController->GetMoveStatus() == EPathFollowingStatus::Waiting) s = "Waiting";
-		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, s);
-		*/
-
-		if (MoveCommand) // Check, if a manual move order was issued
-		{
-			// GetCharacterMovement()->IsMovementInProgress() is always false
-			if (CustomAIController->GetMoveStatus() == EPathFollowingStatus::Idle) // Check, if destination is reached
-			{
-				MoveCommand = false; // The unit is idle now
-				Target = NULL; // Reset the target, so the closest one can be reacquired
-			}
-		}
-
-		if (!MoveCommand)
-		{
-			if (Target && (Target->IsDead || Target->IsPendingKill())) Target = NULL; // Check, if the target is dead in the game or destroyed in the engine
-			if (Target == NULL) AcquireTarget();
-			if (Target == NULL) // If there is still no target
-			{
-				// Do idle stuff
-				CustomAIController->StopMovement();
-			}
-			else
-			{
-				FVector MoveLocation = Target->GetActorLocation();
-
-				float MeleeRange = 200;
-				if ((MoveLocation - GetActorLocation()).SizeSquared() < MeleeRange * MeleeRange) // If actors get close, destroy one of the actors
-				{
-					int coin = FMath::RandRange(0, 1);
-					ACombatTestCharacter* UnitToKill;
-					if (coin) UnitToKill = Target;
-					else UnitToKill = this;
-					UnitToKill->Kill();
-				}
-				else
-				{
-					CustomAIController->MoveToLocation(MoveLocation);
-					/*
-					//UAIBlueprintHelperLibrary::SimpleMoveToLocation(GetController(), MoveLocation);
-					//CustomAIController->MoveToLocation(MoveLocation, UPathFollowingComponent::DefaultAcceptanceRadius, true, true, false, false, NULL, true);
-					
-					// It calls OnMoveCompleted each time. In this case, it doesn't matter, but may be a problem at some point.
-					// Is it possible to determine the reason of MoveCompleted being called? It has some parameters. Getting to the closest point, if destination is unreachable, or timeout can be important. In other cases, manual check can be good enough.
-					// Do not use MoveToActor - sometimes destination will require updates every tick anyway (the unit will want to move not directly towards the target: anticipate and intercept, kite, etc). But in that case, reaching destination will be irrelevant - it will be a custom check anyway?
-					*/
-				}
-			}
-		}
-	}
 }
+//-------------------------------------------------------------------------------------------------
 
 void ACombatTestCharacter::SetSelected(bool _Selected)
 {
 	CursorToWorld->SetVisibility(_Selected);
 }
+//-------------------------------------------------------------------------------------------------
 
 void ACombatTestCharacter::Kill()
 {
@@ -154,7 +94,6 @@ void ACombatTestCharacter::Kill()
 	ACustomHUD* CustomHUD = (ACustomHUD*)CustomPlayerController->GetHUD();
 	CustomPlayerController->SelectedActors.Remove(this);
 	CustomHUD->SelectedActorsDragged.Remove(this);
-
 
 	// Disable AI
 	CustomAIController->StopMovement();
@@ -169,6 +108,7 @@ void ACombatTestCharacter::Kill()
 
 	//Destroy(); // The simplest handling
 }
+//-------------------------------------------------------------------------------------------------
 
 void ACombatTestCharacter::BeginPlay()
 {
@@ -207,32 +147,10 @@ void ACombatTestCharacter::BeginPlay()
 		}
 	}
 }
+//-------------------------------------------------------------------------------------------------
 
-void ACombatTestCharacter::AcquireTarget()
+void ACombatTestCharacter::BeginDestroy()
 {
-	TArray<AActor*> OutActors;
-	TArray< AActor* > ActorsToIgnore;
-	ActorsToIgnore.Add(this);
-
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACombatTestCharacter::StaticClass(), OutActors); // Bruteforce approach
-
-	if (OutActors.Num() == 0) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Find actors - no results");
-	Target = NULL;
-	float DistMinSquared = AcquisitionRange * AcquisitionRange;
-	float DistCurSquared;
-	FVector pos = GetActorLocation();
-	FVector dest;
-
-	for (int i = 0; i < OutActors.Num(); i++)
-	{
-		if (!((ACombatTestCharacter*)OutActors[i])->IsDead && ((ACombatTestCharacter*)OutActors[i])->Team != Team)
-		{
-			dest = ((ACombatTestCharacter*)OutActors[i])->GetActorLocation();
-			if ((DistCurSquared = (dest - pos).SizeSquared()) < DistMinSquared)
-			{
-				Target = (ACombatTestCharacter*)OutActors[i];
-				DistMinSquared = DistCurSquared;
-			}
-		}
-	}
+	Super::BeginDestroy();
 }
+//-------------------------------------------------------------------------------------------------
