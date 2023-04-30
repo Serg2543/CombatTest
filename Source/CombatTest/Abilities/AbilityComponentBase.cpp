@@ -1,12 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-/*
+
 #include "Abilities/AbilityComponentBase.h"
 #include "Abilities/AbilityMeleeAttack.h"
-*/
 
+/*
 #include "AbilityComponentBase.h"
 #include "AbilityMeleeAttack.h"
+*/
 
 // Sets default values for this component's properties
 UAbilityComponentBase::UAbilityComponentBase()

@@ -1,13 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "Abilities/AbilityMeleeAttack.h"
+#include "CombatTestCharacter.h"
 
 /*
-#include "Abilities/AbilityMeleeAttack.h"
-#include "..\CombatTestCharacter.h"
-*/
-
 #include "AbilityMeleeAttack.h"
-#include "..\CombatTestCharacter.h"
+#include "../CombatTestCharacter.h"
+*/
 
 void UAbilityMeleeAttack::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {

@@ -5,11 +5,11 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 
-/*
-#include "Abilities/AbilityComponentBase.h"
-*/
 
-#include "AbilityComponentBase.h"
+#include "Abilities/AbilityComponentBase.h"
+
+
+//#include "AbilityComponentBase.h"
 //#include "CombatTestCharacter.h"
 
 #include "UnitDataComponentBase.generated.h"

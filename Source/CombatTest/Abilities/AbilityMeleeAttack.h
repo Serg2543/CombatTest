@@ -4,7 +4,8 @@
 
 #include "CoreMinimal.h"
 
-#include "AbilityComponentBase.h"
+#include "Abilities/AbilityComponentBase.h"
+//#include "AbilityComponentBase.h"
 
 #include "AbilityMeleeAttack.generated.h"
 

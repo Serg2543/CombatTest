@@ -21,12 +21,6 @@
 #include "CustomHUD.h"
 #include "CustomPlayerController.h"
 
-/*
-#include "UnitDataComponentBase.h"
-*/
-
-//#include "Abilities/UnitDataComponentBase.h"
-
 ACombatTestCharacter::ACombatTestCharacter()
 {
 	// Set size for player capsule
