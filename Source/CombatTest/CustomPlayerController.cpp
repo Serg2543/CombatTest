@@ -86,7 +86,7 @@ void ACustomPlayerController::MoveReleased()
 			MoveLocation.X = HitResult.Location.X + n / 2 * 100;
 			MoveLocation.Y = HitResult.Location.Y + n % 2 * 100;
 			//UAIBlueprintHelperLibrary::SimpleMoveToLocation(SelectedActors[i]->GetController(), MoveLocation);
-			ACustomAIController* AIController = (ACustomAIController*)SelectedActors[i]->GetController();
+			ACustomAIController *AIController = (ACustomAIController*)SelectedActors[i]->GetController();
 			AIController->CommandMoveTo(MoveLocation);
 
 			n++;

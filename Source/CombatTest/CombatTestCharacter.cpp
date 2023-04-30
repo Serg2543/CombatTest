@@ -116,6 +116,36 @@ void ACombatTestCharacter::BeginPlay()
 
 	CustomAIController = Cast<ACustomAIController>(this->GetController());
 	if (CustomAIController == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CustomAIController == NULL");
+	
+	// Test attaching a component to graybox unit
+	/*
+			!!! Do in BPs - it seems easier and won't clutter the code
+				Literally move the component in the hierarchy and select the socket
+	*/
+	/*
+	UCapsuleComponent *cap = FindComponentByClass<UCapsuleComponent>();
+	TArray<USceneComponent *> comp;
+	cap->GetChildrenComponents(false, comp);
+	UStaticMesh *Weapon = NULL;
+	UStaticMeshComponent *meshcomp = NULL;
+	FString s;
+	
+	for (int i = 0; i < comp.Num(); i++)
+	{
+		s = FString::Printf(TEXT("%i: "), i);
+		meshcomp = Cast<UStaticMeshComponent>(comp[i]); // Direct indexing
+		if (meshcomp == NULL) s += "UStaticMeshComponent == NULL";
+		else
+		{
+			if (meshcomp->GetSocketByName(TEXT("Weapon")) == NULL) s += "Socket == NULL";
+			//if (meshcomp->HasAnySockets()) s += "Socket == NULL";
+		}
+		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, s);
+	}	
+
+	FAttachmentTransformRules AttachmentTransformRules(EAttachmentRule::SnapToTarget, false);
+	if (!comp[5]->AttachToComponent(comp[4], AttachmentTransformRules, TEXT("Weapon"))) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "AttachToComponent == NULL");
+	*/
 
 	// Initialize materials for team colors
 	/*

@@ -1,12 +1,10 @@
-# Block all files and folders in \Packs
-Content/Packs/**
-# Unblock all folders in \Packs
-!Content/Packs/**/
-# Unblock selected content
-#!Content/Packs/StarterContent
+# Ignore everything, except custom assets
+Content/**
+!Content/**/
+!Content/Geometry/**
+!Content/Mannequin/**
+!Content/TopDownCPP/**
 
-
-# Initial ignores
 # Visual Studio 2015 user specific files
 .vs/
 

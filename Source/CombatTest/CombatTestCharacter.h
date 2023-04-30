@@ -30,10 +30,20 @@ public:
 	float CorpseTimer = 3; // Time before the corpse is despawned
 	void Kill();
 
+	// void Attack(ACombatTestCharacter* _Target); // Make an attak against the target
+
 
 	int Team = -1;
 	USkeletalMeshComponent* MeshBody = NULL;
 	UMaterialInstanceDynamic* MaterialBodyTeam0 = NULL, *MaterialBodyTeam1 = NULL, *MaterialBodyDead = NULL;
+
+	/*
+		UUnitData *UnitData;
+			Skills and other leveling data
+			Stats (HP, damage and other derived stats)
+			UWeapon *Weapon;
+	*/
+	
 
 protected:
 	class ACustomAIController *CustomAIController; // Store it, so it doesn't have to be found every tick. Initialize in BeginPlay
