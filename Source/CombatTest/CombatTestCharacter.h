@@ -6,7 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
-#include "UnitDataComponent.h"
+#include "Abilities/UnitDataComponentBase.h"
 
 #include "CombatTestCharacter.generated.h"
 
@@ -38,9 +38,9 @@ public:
 
 	int Team = -1;
 	USkeletalMeshComponent* MeshBody = NULL;
-	UMaterialInstanceDynamic* MaterialBodyTeam0 = NULL, *MaterialBodyTeam1 = NULL, *MaterialBodyDead = NULL;
+	UMaterialInstanceDynamic* MaterialBodyTeam0 = NULL, * MaterialBodyTeam1 = NULL, * MaterialBodyDead = NULL; 
 	
-	UUnitDataComponent *UnitDataComponent;
+	class UUnitDataComponentBase *UnitDataComponent;
 
 	/*
 		UUnitData *UnitData;

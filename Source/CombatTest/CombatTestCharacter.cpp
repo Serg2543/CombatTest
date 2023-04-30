@@ -16,9 +16,16 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
+
 #include "CustomAIController.h"
 #include "CustomHUD.h"
 #include "CustomPlayerController.h"
+
+/*
+#include "UnitDataComponentBase.h"
+*/
+
+//#include "Abilities/UnitDataComponentBase.h"
 
 ACombatTestCharacter::ACombatTestCharacter()
 {
@@ -66,6 +73,15 @@ ACombatTestCharacter::ACombatTestCharacter()
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	// Initializae UitData component
+	UnitDataComponent = CreateDefaultSubobject<UUnitDataComponentBase>(TEXT("UnitData"));
+	//UnitDataComponent->RegisterComponent();//ma->RegisterComponent(); // Exception
+	//UnitDataComponent->UnitOwner = this;
+	
+	//UnitDataComponent->SetupAttachment(RootComponent);
+	AddInstanceComponent(UnitDataComponent);
+	UnitDataComponent->SetOwner(this);
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -90,7 +106,7 @@ void ACombatTestCharacter::SetSelected(bool _Selected)
 void ACombatTestCharacter::Kill()
 {
 	// Remove the actor from selection lists
-	ACustomPlayerController* CustomPlayerController = (ACustomPlayerController*)UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	ACustomPlayerController *CustomPlayerController = (ACustomPlayerController *)UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	ACustomHUD* CustomHUD = (ACustomHUD*)CustomPlayerController->GetHUD();
 	CustomPlayerController->SelectedActors.Remove(this);
 	CustomHUD->SelectedActorsDragged.Remove(this);
@@ -114,9 +130,12 @@ void ACombatTestCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Store AIController, so it doesn't have to be retreived every time
 	CustomAIController = Cast<ACustomAIController>(this->GetController());
 	if (CustomAIController == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CustomAIController == NULL");
-	
+
+	UnitDataComponent->SetOwner(this);
+
 	// Test attaching a component to graybox unit
 	/*
 			!!! Do in BPs - it seems easier and won't clutter the code

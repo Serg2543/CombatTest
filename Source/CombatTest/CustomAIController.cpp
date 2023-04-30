@@ -5,6 +5,13 @@
 #include "Kismet/GameplayStatics.h"
 #include "Navigation/CrowdFollowingComponent.h"
 
+/*
+#include "AbilityComponentBase.h"
+*/
+
+#include "Abilities/AbilityComponentBase.h"
+
+
 void ACustomAIController::Tick_Idle(float DeltaSeconds)
 {
 	if (Target == NULL) AcquireTarget(); // Attempt to acquire a target
@@ -41,7 +48,10 @@ void ACustomAIController::Tick_AttackMove(float DeltaSeconds)
 	{
 		// Instead of resolving it here, add an attack order and resolve there (use a stack of orders, so if the target is dead, the unit will return to previous order - a-move)
 		FVector MoveLocation = Target->GetActorLocation();
+		
 		// FIX: use MoveDestination to store destination, so the unit will chase the target, then resume a-move.
+		/*
+		// Initial melee attack resolution: kill a random unit instantly
 		float MeleeRange = 200; // Temp
 		if ((MoveLocation - Unit->GetActorLocation()).SizeSquared() < MeleeRange * MeleeRange) // If actors get close, destroy one of the actors
 		{
@@ -51,6 +61,16 @@ void ACustomAIController::Tick_AttackMove(float DeltaSeconds)
 			if (coin) UnitToKill = Target;
 			else UnitToKill = Unit;
 			UnitToKill->Kill();
+		}
+		else
+		{
+			MoveToLocation(MoveLocation);
+		}
+		*/
+		// Abilities added
+		if (Ability->CanActivateNow(Target)) // If can use the planned ability right now, do it
+		{
+			Ability->ActivateAbility(Target);
 		}
 		else
 		{
@@ -168,6 +188,7 @@ void ACustomAIController::OnPossess(APawn *InPawn)
 	Super::OnPossess(InPawn);
 	Unit = Cast<ACombatTestCharacter>(InPawn);
 	if (Unit == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "OnPossess Unit == NULL");
+	Ability = Unit->UnitDataComponent->Abilities[0];
 }
 //-------------------------------------------------------------------------------------------------
 

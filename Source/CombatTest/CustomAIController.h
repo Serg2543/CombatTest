@@ -40,8 +40,10 @@ class COMBATTEST_API ACustomAIController : public AAIController
 		void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
 	public:
 		EUnitCommand UnitCommand = EUC_Idle;
-		ACombatTestCharacter *Unit = NULL;
-		ACombatTestCharacter *Target = NULL;
+		ACombatTestCharacter *Unit = NULL; // Possessed unit
+		ACombatTestCharacter *Target = NULL; // Current target
+		class UAbilityComponentBase *Ability = NULL; // Current ability planned to be used on the target
+
 		FVector MoveDestination = FVector(0, 0, 0);
 
 		void CommandStop();

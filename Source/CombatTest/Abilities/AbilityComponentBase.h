@@ -4,17 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "AbilityComponent.generated.h"
+#include "AbilityComponentBase.generated.h"
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class COMBATTEST_API UAbilityComponent : public UActorComponent
+class COMBATTEST_API UAbilityComponentBase : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:	
 	// Sets default values for this component's properties
-	UAbilityComponent();
+	
+	UAbilityComponentBase();
 
 protected:
 	// Called when the game starts
@@ -24,17 +25,19 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	class ABaseCharacter *Source = NULL; // Use owner of the component?
-	class ABaseCharacter *Target = NULL; // Target, that the ability was used on
+	class ACombatTestCharacter *UnitOwner = NULL; // Use owner of the component?
+	class ACombatTestCharacter *Target = NULL; // Target, that the ability was used on
 	float EnergyCost = 0;
+	float Range = 200; // Default for test melee range
+
 	// Some information about valid targets (enemy, ally, self, ground, etc)
 	// bool IsAttack = false; // Ability can used as an autoattack against previous target
 	/*
-	virtual void ActivateAbility(class ABaseCharacter* Target) {}
 	virtual float Estimate(class ABaseCharacter* Target) {return 0;} // AI can estimate the value of abilities and pick the best one
 	virtual bool IsTargetValid(class ABaseCharacter* Target) {return true;}
-	virtual bool CanActivateNow(class ABaseCharacter* Target) {return false;} // To determine, if AI has to move closer or do something else to be able to use the ability. Can return Enum to specify the reason of fail.
 	*/
+	virtual void ActivateAbility(class ACombatTestCharacter *_Target) {}
+	virtual bool CanActivateNow(class ACombatTestCharacter *_Target) { return false; } // To determine, if AI has to move closer or do something else to be able to use the ability. Can return Enum to specify the reason of fail.
 	/*
 	virtual bool CanActivate(); // Can be used to gray out abilities in the UI in GAS it is "CanActivateAbility"
 
