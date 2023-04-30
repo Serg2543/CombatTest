@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Materials/MaterialInstanceDynamic.h"
+
+#include "UnitDataComponent.h"
+
 #include "CombatTestCharacter.generated.h"
 
 UCLASS(Blueprintable)
@@ -36,6 +39,8 @@ public:
 	int Team = -1;
 	USkeletalMeshComponent* MeshBody = NULL;
 	UMaterialInstanceDynamic* MaterialBodyTeam0 = NULL, *MaterialBodyTeam1 = NULL, *MaterialBodyDead = NULL;
+	
+	UUnitDataComponent *UnitDataComponent;
 
 	/*
 		UUnitData *UnitData;
