@@ -49,7 +49,7 @@ class COMBATTEST_API ACustomAIController : public AAIController
 		void CommandStop();
 		void CommandMoveTo(FVector _MoveDestination);
 		void CommandAttackMoveTo(FVector _MoveDestination);
-		void CommandAttackTarget(ACombatTestCharacter* _Target);
+		void CommandAttackTarget(ACombatTestCharacter *_Target);
 		void CommandHoldPosition(); // Can have parameters for aggro behavior
 
 		ACustomAIController(const FObjectInitializer& ObjectInitializer);

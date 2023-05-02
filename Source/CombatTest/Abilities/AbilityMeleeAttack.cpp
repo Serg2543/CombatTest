@@ -10,28 +10,33 @@
 
 void UAbilityMeleeAttack::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	AttackDelayCounter += DeltaTime;
-	if (AttackDelayCounter > AttackDelay)
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+//-------------------------------------------------------------------------------------------------
+
+void UAbilityMeleeAttack::ActivateAbility()
+{
+	if (Target != NULL && !Target->UnitDataComponent->IsDead() && !Target->IsPendingKill())
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, "Attack"); // It ticks even without registering or attaching to anything
-		AttackDelayCounter -= AttackDelay;
+		Target->UnitDataComponent->TakeDamage(BaseDamage);
 	}
+	// If Target is invalid, simply finish the sequence
+}
+
+void UAbilityMeleeAttack::StartActivating(ABaseCharacterClass *_Target)
+{
+	Super::StartActivating(_Target);
 }
 //-------------------------------------------------------------------------------------------------
 
-void UAbilityMeleeAttack::ActivateAbility(ACombatTestCharacter *_Target)
+bool UAbilityMeleeAttack::CanActivateNow(ABaseCharacterClass *_Target)
 {
-	int coin = FMath::RandRange(0, 1);
-	ACombatTestCharacter *UnitToKill;
-	if (coin) UnitToKill = _Target;
-	else UnitToKill = UnitOwner;
-	UnitToKill->Kill();
-}
-//-------------------------------------------------------------------------------------------------
+	// Do not test for valid target - some abilities can be activated without a target. Or use a tag for this type of abilities and test the target for other types?
 
-bool UAbilityMeleeAttack::CanActivateNow(ACombatTestCharacter*_Target)
-{
-	if ((_Target->GetActorLocation() - UnitOwner->GetActorLocation()).SizeSquared() < Range * Range)
+	//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, "CanActivateNow");
+	if (!UnitOwner->UnitDataComponent->bBusy && // No action is in progress
+		//!bInProgress && // Current action is not in progress - seems unnecessary, because it will also set bBusy
+		(_Target->GetActorLocation() - UnitOwner->GetActorLocation()).SizeSquared() < Range * Range) // Target is in range
 	{
 		return true;
 	}
@@ -41,7 +46,7 @@ bool UAbilityMeleeAttack::CanActivateNow(ACombatTestCharacter*_Target)
 
 UAbilityMeleeAttack::UAbilityMeleeAttack()
 {
-
+	Range = 200; // Default for test melee range
 }
 //-------------------------------------------------------------------------------------------------
 

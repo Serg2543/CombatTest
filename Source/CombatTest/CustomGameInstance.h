@@ -15,7 +15,13 @@ class COMBATTEST_API UCustomGameInstance : public UGameInstance
 	GENERATED_BODY()
 	public:
 		UPROPERTY(EditAnywhere)
-		TSubclassOf<class ACombatTestCharacter> SpawnType; // VOODOO: Set the parameter to a blueprint to spawn	
+			TSubclassOf<class ACombatTestCharacter> SpawnType;
+		UPROPERTY(EditAnywhere)
+			UMaterialInterface *MaterialTeam0 = NULL;
+		UPROPERTY(EditAnywhere)
+			UMaterialInterface *MaterialTeam1 = NULL;
+		UPROPERTY(EditAnywhere)
+			UMaterialInterface *MaterialDead = NULL;
 
 		UCustomGameInstance();
 };

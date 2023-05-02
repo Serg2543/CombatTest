@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 
 #include "Abilities/AbilityComponentBase.h"
-//#include "AbilityComponentBase.h"
 
 #include "AbilityMeleeAttack.generated.h"
 
@@ -18,12 +17,10 @@ class COMBATTEST_API UAbilityMeleeAttack : public UAbilityComponentBase
 	GENERATED_BODY()
 	protected:
 		virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+		virtual void ActivateAbility() override;
 	public:
-
-		float AttackDelay = 1.7;
-		float AttackDelayCounter = 0;
-		virtual void ActivateAbility(class ACombatTestCharacter* _Target) override;
-		virtual bool CanActivateNow(class ACombatTestCharacter*_Target) override;
+		virtual void StartActivating(ABaseCharacterClass * _Target) override;
+		virtual bool CanActivateNow(ABaseCharacterClass *_Target) override;
 
 		UAbilityMeleeAttack();
 		~UAbilityMeleeAttack();

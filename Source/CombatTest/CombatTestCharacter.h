@@ -2,11 +2,15 @@
 
 #pragma once
 
+typedef class ACombatTestCharacter ABaseCharacterClass; // This is base character class, there should be one in every project. It can have a different different in different projects, so define it in one place;
+
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Components/WidgetComponent.h"
+#include "Components/ProgressBar.h"
 
-#include "Abilities/UnitDataComponentBase.h"
+//#include "Abilities/UnitDataComponentBase.h"
 
 #include "CombatTestCharacter.generated.h"
 
@@ -18,8 +22,6 @@ class ACombatTestCharacter : public ACharacter
 public:
 	ACombatTestCharacter();
 
-	// Called every frame.
-
 	/** Returns TopDownCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
 	/** Returns CameraBoom subobject **/
@@ -29,29 +31,27 @@ public:
 
 	void SetSelected(bool _Selected);
 
-	bool IsDead = false;
-	float CorpseTimer = 3; // Time before the corpse is despawned
-	void Kill();
-
 	// void Attack(ACombatTestCharacter* _Target); // Make an attak against the target
 
 
 	int Team = -1;
-	USkeletalMeshComponent* MeshBody = NULL;
-	UMaterialInstanceDynamic* MaterialBodyTeam0 = NULL, * MaterialBodyTeam1 = NULL, * MaterialBodyDead = NULL; 
-	
-	class UUnitDataComponentBase *UnitDataComponent;
+	UMeshComponent *MeshBody = NULL;
 
-	/*
-		UUnitData *UnitData;
-			Skills and other leveling data
-			Stats (HP, damage and other derived stats)
-			UWeapon *Weapon;
-	*/
+	UStaticMeshComponent *WeaponComponent = NULL;
+		float WeaponAnimPeriod = 1; // Pseudo-animation of the weapon mesh (rotate the socket)
+		float WeaponAnimDir = 1; // Pseudo-animation of the weapon mesh (rotate the socket)
+		float WeaponAnimPhase = 0;
+	//USkeletalMeshComponent* MeshBody = NULL;
+	//UMaterialInstanceDynamic* MaterialBodyTeam0 = NULL, * MaterialBodyTeam1 = NULL, * MaterialBodyDead = NULL;
+	UWidgetComponent *WidgetComponent;
+	UUserWidget *UserWidget;
+	UProgressBar *WidgetHPBar = NULL;
 	
+	class UUnitDataComponentBase *UnitDataComponent = NULL;
+	
+	class ACustomAIController* CustomAIController; // Store it, so it doesn't have to be found every tick. Initialize in BeginPlay
 
 protected:
-	class ACustomAIController *CustomAIController; // Store it, so it doesn't have to be found every tick. Initialize in BeginPlay
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 	virtual void BeginDestroy() override;
@@ -69,4 +69,3 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UDecalComponent* CursorToWorld;
 };
-

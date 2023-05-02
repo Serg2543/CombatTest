@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "CombatTestCharacter.h"
+
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
@@ -16,10 +17,14 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
 #include "CustomAIController.h"
 #include "CustomHUD.h"
 #include "CustomPlayerController.h"
+#include "CustomGameInstance.h"
+#include "Abilities/UnitDataComponentBase.h"
+#include "Abilities/AbilityMeleeAttack.h"
 
 ACombatTestCharacter::ACombatTestCharacter()
 {
@@ -83,40 +88,70 @@ void ACombatTestCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (IsDead)
+	/*
+	// Make the widget face the camera - it is not what it has to be
+	FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation();
+	FRotator rot = UKismetMathLibrary::FindLookAtRotation(WidgetComponent->GetComponentToWorld().GetLocation(), CameraLocation);
+	WidgetComponent->SetWorldRotation(rot);
+	*/
+	/*
+	// Doesn't work, even in the editor
+	FVector Scale = FVector(3, 3, 30);
+	WidgetComponent->SetWorldScale3D(Scale);
+	*/
+
+	if (WidgetHPBar)
 	{
-		CorpseTimer -= DeltaSeconds;
-		if (CorpseTimer <= 0) Destroy(); // Can use another phase: fade out, fall through the floor, etc
+		float Percent = UnitDataComponent->HP / UnitDataComponent->HPMax;
+		if (Percent <= 0) Percent = 0;
+		WidgetHPBar->SetPercent(Percent);
+
+		// Scale by distance to the camera. Not precise scaling, but good enough.
+		FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation();
+		FVector WidgetLocation = WidgetComponent->GetComponentToWorld().GetLocation();
+
+		float Scale = 1650 / (WidgetLocation - CameraLocation).Size(); // Using empirical reference value
+		if (Scale > 1) Scale = 1;
+		FVector2D Scale2D = FVector2D(Scale, Scale);
+		UserWidget->SetRenderScale(Scale2D);
+		const float ScaleVisibilityThreshold = 0.25; // tmp
+		WidgetHPBar->SetVisibility(!UnitDataComponent->IsDead() && WidgetHPBar->Percent < 1 && Scale > ScaleVisibilityThreshold ? ESlateVisibility::Visible : ESlateVisibility::Hidden); // Show only if < 100%
 	}
+	else GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "WidgetHPBar == NULL");
+
+	
+	// Pseudo-animate the weapon
+	float t = UnitDataComponent->Abilities[0]->TimeCounter;
+	float p = UnitDataComponent->Abilities[0]->Predelay;
+	float l = UnitDataComponent->Abilities[0]->TotalTime;
+	float x = 0; // Phase of predelay or backswing
+	if (!UnitDataComponent->bBusy)
+	{
+		//x = 0.5; // Default pose is with the weapon at an angle - it looks natural. There is a jump on the very 1st attack, but it is not important
+	}
+	else // If an attack is in progress, calculate the phase and corresponding rotation
+	{
+		if (t < p) x = t / p; // Predelay
+		else x = 1 - (t - p) / (l - p); // Recovery, in reverse direction
+		if (x < 0) x = 0;
+		else if (x > 1) x = 1;
+	}
+	//x = 0.5;
+	//x = t / l;
+
+	FRotator rot = FRotator(-90 * x, 0, 0);
+	//WeaponComponent->SetRelativeRotation_Direct(rot);
+	WeaponComponent->SetRelativeRotation(rot);
+		// Other options
+		//SetRelativeRotation
+		//SetRelativeRotation_Direct
+		//SetRelativeRotationExact
 }
 //-------------------------------------------------------------------------------------------------
 
 void ACombatTestCharacter::SetSelected(bool _Selected)
 {
 	CursorToWorld->SetVisibility(_Selected);
-}
-//-------------------------------------------------------------------------------------------------
-
-void ACombatTestCharacter::Kill()
-{
-	// Remove the actor from selection lists
-	ACustomPlayerController *CustomPlayerController = (ACustomPlayerController *)UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	ACustomHUD* CustomHUD = (ACustomHUD*)CustomPlayerController->GetHUD();
-	CustomPlayerController->SelectedActors.Remove(this);
-	CustomHUD->SelectedActorsDragged.Remove(this);
-
-	// Disable AI
-	CustomAIController->StopMovement();
-	CustomAIController->UnPossess();
-	CustomAIController->Destroy(); // Destroy the controller explicitly, because it it is not automatically destroyed after Unpossess()
-	IsDead = true;
-	// Turn off collision with units
-	SetActorEnableCollision(false);
-	// Change visual appearance
-	MeshBody->SetMaterial(0, MaterialBodyDead); // It causes an exception, when a lot of units are spawned
-	// Use a proper death animation
-
-	//Destroy(); // The simplest handling
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -128,37 +163,44 @@ void ACombatTestCharacter::BeginPlay()
 	CustomAIController = Cast<ACustomAIController>(this->GetController());
 	if (CustomAIController == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CustomAIController == NULL");
 
-	UnitDataComponent->SetOwner(this);
-
-	// Test attaching a component to graybox unit
-	/*
-			!!! Do in BPs - it seems easier and won't clutter the code
-				Literally move the component in the hierarchy and select the socket
-	*/
-	/*
-	UCapsuleComponent *cap = FindComponentByClass<UCapsuleComponent>();
-	TArray<USceneComponent *> comp;
-	cap->GetChildrenComponents(false, comp);
-	UStaticMesh *Weapon = NULL;
-	UStaticMeshComponent *meshcomp = NULL;
-	FString s;
-	
-	for (int i = 0; i < comp.Num(); i++)
+	// Store WidgetComponent for HP bar, so it doesn't have to be retreived every time
+	WidgetComponent = FindComponentByClass<UWidgetComponent>();
+	if (WidgetComponent == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "WidgetComponent == NULL");
+	else
 	{
-		s = FString::Printf(TEXT("%i: "), i);
-		meshcomp = Cast<UStaticMeshComponent>(comp[i]); // Direct indexing
-		if (meshcomp == NULL) s += "UStaticMeshComponent == NULL";
+		UserWidget = WidgetComponent->GetUserWidgetObject();
+		if (UserWidget == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "UserWidget == NULL");
 		else
 		{
-			if (meshcomp->GetSocketByName(TEXT("Weapon")) == NULL) s += "Socket == NULL";
-			//if (meshcomp->HasAnySockets()) s += "Socket == NULL";
+			WidgetHPBar = (UProgressBar*)UserWidget->GetWidgetFromName(TEXT("PB_HPBar"));
+			if (WidgetHPBar == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "WidgetHPBar == NULL");
+			else WidgetHPBar->SetVisibility(ESlateVisibility::Hidden); // Hide by default at full HP
 		}
-		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, s);
-	}	
-
-	FAttachmentTransformRules AttachmentTransformRules(EAttachmentRule::SnapToTarget, false);
-	if (!comp[5]->AttachToComponent(comp[4], AttachmentTransformRules, TEXT("Weapon"))) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "AttachToComponent == NULL");
-	*/
+	}
+	// Find the capsule mesh, that represents the body
+	// THere should be a better way
+	UCapsuleComponent* cap = FindComponentByClass<UCapsuleComponent>();
+	TArray<USceneComponent*> comp; 
+	TArray<USceneComponent*> comp2;
+	cap->GetChildrenComponents(false, comp);
+	
+	UStaticMeshComponent *meshcomp = NULL; // The "body" is the mesh with corresponding sockets - find it and store for future reference
+	for (int i = 0; i < comp.Num(); i++)
+	{
+		meshcomp = Cast<UStaticMeshComponent>(comp[i]);
+		if (meshcomp != NULL)
+		{
+			if (meshcomp->GetSocketByName(TEXT("Weapon")) != NULL)
+			{
+				MeshBody = meshcomp;
+				MeshBody->GetChildrenComponents(false, comp2);
+				if (comp2.Num() > 0) WeaponComponent = Cast<UStaticMeshComponent>(comp2[0]);
+			}
+		}
+	}
+	
+	if (MeshBody == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "MeshBody == NULL");
+	if (WeaponComponent == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "WeaponComponent == NULL");
 
 	// Initialize materials for team colors
 	/*
@@ -167,7 +209,7 @@ void ACombatTestCharacter::BeginPlay()
 	// Had an exception in KIll() {... MeshBody->SetMaterial(0, MaterialBodyDead); ...} after spawning a lot of unit
 	// https://couchlearn.com/how-to-use-the-game-instance-in-unreal-engine-4/
 	*/
-
+	/*
 	MeshBody = FindComponentByClass<USkeletalMeshComponent>();
 	if (MeshBody == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Mesh == NULL");
 	else
@@ -189,6 +231,7 @@ void ACombatTestCharacter::BeginPlay()
 			else MaterialBodyDead->SetVectorParameterValue(FName(TEXT("BodyColor")), FLinearColor(0.4f, 0.4f, 0.0f));
 		}
 	}
+	*/
 }
 //-------------------------------------------------------------------------------------------------
 

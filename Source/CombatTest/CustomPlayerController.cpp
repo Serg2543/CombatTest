@@ -10,6 +10,7 @@
 
 #include "CustomAIController.h"
 #include "CustomGameInstance.h"
+#include "Abilities/UnitDataComponentBase.h"
 
 ACustomPlayerController::ACustomPlayerController()
 {
@@ -81,7 +82,7 @@ void ACustomPlayerController::MoveReleased()
 	int n = 0; // Count actual amount, if some actors were skipped
 	for (int i = 0; i < SelectedActors.Num(); i++)
 	{
-		if (!SelectedActors[i]->IsDead)
+		if (!SelectedActors[i]->UnitDataComponent->IsDead())
 		{
 			MoveLocation.X = HitResult.Location.X + n / 2 * 100;
 			MoveLocation.Y = HitResult.Location.Y + n % 2 * 100;
@@ -94,6 +95,13 @@ void ACustomPlayerController::MoveReleased()
 			DrawDebugSphere(GetWorld(), MoveLocation, 25, 10, FColor::Red, false, 3);
 		}
 	}
+
+	/*
+	FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation();
+	float Scale = (HitResult.Location - CameraLocation).Size();
+	s = FString::Printf(TEXT("distance to camera: %0.1f: "), Scale);
+	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, s);
+	*/
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -118,8 +126,14 @@ void ACustomPlayerController::SpawnAI(int _Team)
 				Actor->Team = _Team;
 				if (Actor->MeshBody) // Set materials to corresponding color
 				{
+					
+					if (_Team == 0) Actor->MeshBody->SetMaterial(0, ((UCustomGameInstance*)GetWorld()->GetGameInstance())->MaterialTeam0);
+					else Actor->MeshBody->SetMaterial(0, ((UCustomGameInstance*)GetWorld()->GetGameInstance())->MaterialTeam1);
+
+					/*
 					if (_Team == 0) Actor->MeshBody->SetMaterial(0, Actor->MaterialBodyTeam0);
 					else Actor->MeshBody->SetMaterial(0, Actor->MaterialBodyTeam1);
+					*/
 				}
 			}
 		} while (Actor == NULL && i++ < 5); // Try several times, if random picks unsuitable position

@@ -49,55 +49,24 @@ void ACustomAIController::Tick_AttackMove(float DeltaSeconds)
 		// Instead of resolving it here, add an attack order and resolve there (use a stack of orders, so if the target is dead, the unit will return to previous order - a-move)
 		FVector MoveLocation = Target->GetActorLocation();
 		
-		// FIX: use MoveDestination to store destination, so the unit will chase the target, then resume a-move.
-		/*
-		// Initial melee attack resolution: kill a random unit instantly
-		float MeleeRange = 200; // Temp
-		if ((MoveLocation - Unit->GetActorLocation()).SizeSquared() < MeleeRange * MeleeRange) // If actors get close, destroy one of the actors
-		{
-			//
-			int coin = FMath::RandRange(0, 1);
-			ACombatTestCharacter* UnitToKill;
-			if (coin) UnitToKill = Target;
-			else UnitToKill = Unit;
-			UnitToKill->Kill();
-		}
-		else
-		{
-			MoveToLocation(MoveLocation);
-		}
-		*/
+		// TODO: use MoveDestination to store destination, so the unit will chase the target, then resume a-move.
 		// Abilities added
 		if (Ability->CanActivateNow(Target)) // If can use the planned ability right now, do it
 		{
-			Ability->ActivateAbility(Target);
+			StopMovement();
+			Ability->StartActivating(Target);
 		}
 		else
 		{
-			MoveToLocation(MoveLocation);
+			//	??? Movement can be an ability too, so it uses the same CanActivateNow()
+			if (!Unit->UnitDataComponent->bBusy) // Ckeck, if the unit is busy executing an ability
+			{
+				MoveToLocation(MoveLocation);
+			}
 			// It calls OnMoveCompleted each time. In this case, it doesn't matter, but may be a problem at some point.
 			// Is it possible to determine the reason of MoveCompleted being called? It has some parameters. Getting to the closest point, if destination is unreachable, or timeout can be important. In other cases, manual check can be good enough.
 			// Do not use MoveToActor - sometimes destination will require updates every tick anyway (the unit will want to move not directly towards the target: anticipate and intercept, kite, etc). But in that case, reaching destination will be irrelevant - it will be a custom check anyway?
 		}
-		/*
-			// Proper behavior
-			// The unit will have weapons, stats, etc, and execute the attack
-
-		if ((MoveLocation - Unit->GetActorLocation()).SizeSquared() < Unit->AttackRange * Unit->AttackRange)
-		{
-			Unit->Attack(Target);
-			//
-			int coin = FMath::RandRange(0, 1);
-			ACombatTestCharacter* UnitToKill;
-			if (coin) UnitToKill = Target;
-			else UnitToKill = Unit;
-			UnitToKill->Kill();
-		}
-		else
-		{
-			CustomAIController->MoveToLocation(MoveLocation);
-		}
-		*/
 	}
 }
 //-------------------------------------------------------------------------------------------------
@@ -129,10 +98,14 @@ void ACustomAIController::Tick(float DeltaSeconds)
 	if (Unit == NULL) return;
 	*/
 
-	if (Target && (Target->IsDead || Target->IsPendingKill())) Target = NULL; // Check, if the target is dead in the game or destroyed in the engine
-	
+	if (Unit->UnitDataComponent->bBusy)
+	{
+		// Disable movement
+	}
 
-	if (!Unit->IsDead) // It seems redundant - the unit will be unpossessed
+	if (Target && (Target->UnitDataComponent->IsDead() || Target->IsPendingKill())) Target = NULL; // Check, if the target is dead in the game or destroyed in the engine
+
+	if (!Unit->UnitDataComponent->IsDead()) // It seems redundant - the unit will be unpossessed
 		// But have to check for other unit states, that prevent acting (attacking, hit recovery, stun, etc) - they will be handled by the unit. It can be a general "BlocksAI" flag? Or set CanTick directly?
 		// Some actions can be interrupted intentionally: can make sense to start a dodge roll during an attack		
 	{
@@ -170,7 +143,7 @@ void ACustomAIController::AcquireTarget()
 
 	for (int i = 0; i < OutActors.Num(); i++)
 	{
-		if (!((ACombatTestCharacter*)OutActors[i])->IsDead && ((ACombatTestCharacter*)OutActors[i])->Team != Unit->Team)
+		if (!((ACombatTestCharacter*)OutActors[i])->UnitDataComponent->IsDead() && ((ACombatTestCharacter*)OutActors[i])->Team != Unit->Team)
 		{
 			dest = ((ACombatTestCharacter*)OutActors[i])->GetActorLocation();
 			if ((DistCurSquared = (dest - pos).SizeSquared()) < DistMinSquared)
@@ -180,21 +153,6 @@ void ACustomAIController::AcquireTarget()
 			}
 		}
 	}
-}
-//-------------------------------------------------------------------------------------------------
-
-void ACustomAIController::OnPossess(APawn *InPawn)
-{
-	Super::OnPossess(InPawn);
-	Unit = Cast<ACombatTestCharacter>(InPawn);
-	if (Unit == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "OnPossess Unit == NULL");
-	Ability = Unit->UnitDataComponent->Abilities[0];
-}
-//-------------------------------------------------------------------------------------------------
-
-void ACustomAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
-{
-	//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Move completed");
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -235,6 +193,21 @@ void ACustomAIController::CommandHoldPosition() // Can have parameters for aggro
 	Target = NULL;
 	CommandAttackMoveTo(Unit->GetActorLocation()); // A-move to current location, add checks for actual command to prevent actual movement and reaching destination
 	UnitCommand = EUC_HoldPosition;
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomAIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	Unit = Cast<ACombatTestCharacter>(InPawn);
+	if (Unit == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "OnPossess Unit == NULL");
+	Ability = Unit->UnitDataComponent->Abilities[0];
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Move completed");
 }
 //-------------------------------------------------------------------------------------------------
 
