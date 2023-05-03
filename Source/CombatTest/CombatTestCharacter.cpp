@@ -12,7 +12,10 @@
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Engine/World.h"
 
-#include "Materials/Material.h"
+//#include "Materials/Material.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Components/WidgetComponent.h"
+#include "Components/ProgressBar.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -123,25 +126,26 @@ void ACombatTestCharacter::Tick(float DeltaSeconds)
 	// Pseudo-animate the weapon
 	float t = UnitDataComponent->Abilities[0]->TimeCounter;
 	float p = UnitDataComponent->Abilities[0]->Predelay;
-	float l = UnitDataComponent->Abilities[0]->TotalTime;
+	float d = UnitDataComponent->Abilities[0]->TotalTime;
 	float x = 0; // Phase of predelay or backswing
 	if (!UnitDataComponent->bBusy)
 	{
-		//x = 0.5; // Default pose is with the weapon at an angle - it looks natural. There is a jump on the very 1st attack, but it is not important
+		x = 0.5; // Default pose is with the weapon at an angle - it looks natural. There is a jump on the very 1st attack, but it is not important
 	}
 	else // If an attack is in progress, calculate the phase and corresponding rotation
 	{
 		if (t < p) x = t / p; // Predelay
-		else x = 1 - (t - p) / (l - p); // Recovery, in reverse direction
+		else x = 1 - (t - p) / (d - p); // Recovery, in reverse direction
 		if (x < 0) x = 0;
 		else if (x > 1) x = 1;
 	}
 	//x = 0.5;
 	//x = t / l;
-
+	
 	FRotator rot = FRotator(-90 * x, 0, 0);
 	//WeaponComponent->SetRelativeRotation_Direct(rot);
 	WeaponComponent->SetRelativeRotation(rot);
+	
 		// Other options
 		//SetRelativeRotation
 		//SetRelativeRotation_Direct

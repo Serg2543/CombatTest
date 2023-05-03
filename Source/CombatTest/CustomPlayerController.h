@@ -4,13 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "CustomHUD.h"
-#include "CustomGameMode.h"
 #include "CustomPlayerController.generated.h"
 
-/**
- * 
- */
+class ACombatTestCharacter;
+class ACustomGameMode;
+class ACustomHUD;
+
 UCLASS()
 class COMBATTEST_API ACustomPlayerController : public APlayerController
 {
@@ -19,7 +18,7 @@ class COMBATTEST_API ACustomPlayerController : public APlayerController
 	public:
 		ACustomHUD *HUD;
 
-		TArray<ACombatTestCharacter*> SelectedActors;
+		TArray<ACombatTestCharacter *> SelectedActors;
 
 		virtual void BeginPlay() override;
 		virtual void SetupInputComponent() override;
@@ -34,7 +33,7 @@ class COMBATTEST_API ACustomPlayerController : public APlayerController
 		void SelectionReleased();
 		void MoveReleased();
 
-		ACustomGameMode* GameMode;
+		ACustomGameMode *GameMode;
 		
 		void SpawnAI(int _Team);
 		void SpawnAI_0();

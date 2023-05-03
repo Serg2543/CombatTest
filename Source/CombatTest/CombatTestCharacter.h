@@ -2,17 +2,20 @@
 
 #pragma once
 
-typedef class ACombatTestCharacter ABaseCharacterClass; // This is base character class, there should be one in every project. It can have a different different in different projects, so define it in one place;
-
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Components/WidgetComponent.h"
-#include "Components/ProgressBar.h"
-
-//#include "Abilities/UnitDataComponentBase.h"
-
 #include "CombatTestCharacter.generated.h"
+
+class UCameraComponent;
+class USpringArmComponent;
+class UDecalComponent;
+class UStaticMeshComponent;
+class UWidgetComponent;
+class UUserWidget;
+class UProgressBar;
+
+class ACustomAIController;
+class UUnitDataComponentBase;
 
 UCLASS(Blueprintable)
 class ACombatTestCharacter : public ACharacter
@@ -23,11 +26,11 @@ public:
 	ACombatTestCharacter();
 
 	/** Returns TopDownCameraComponent subobject **/
-	FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
+	FORCEINLINE UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
 	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns CursorToWorld subobject **/
-	FORCEINLINE class UDecalComponent* GetCursorToWorld() { return CursorToWorld; }
+	FORCEINLINE UDecalComponent* GetCursorToWorld() { return CursorToWorld; }
 
 	void SetSelected(bool _Selected);
 
@@ -47,9 +50,8 @@ public:
 	UUserWidget *UserWidget;
 	UProgressBar *WidgetHPBar = NULL;
 	
-	class UUnitDataComponentBase *UnitDataComponent = NULL;
-	
-	class ACustomAIController* CustomAIController; // Store it, so it doesn't have to be found every tick. Initialize in BeginPlay
+	ACustomAIController* CustomAIController; // Store it, so it doesn't have to be found every tick. Initialize in BeginPlay
+	UUnitDataComponentBase *UnitDataComponent = NULL;
 
 protected:
 	virtual void Tick(float DeltaSeconds) override;
@@ -59,13 +61,13 @@ protected:
 private:
 	/** Top down camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class UCameraComponent* TopDownCameraComponent;
+		UCameraComponent* TopDownCameraComponent;
 
 	/** Camera boom positioning the camera above the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class USpringArmComponent* CameraBoom;
+		USpringArmComponent* CameraBoom;
 
 	/** A decal that projects to the cursor location. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class UDecalComponent* CursorToWorld;
+		UDecalComponent* CursorToWorld;
 };

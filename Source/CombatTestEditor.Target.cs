@@ -7,7 +7,12 @@ public class CombatTestEditorTarget : TargetRules
 {
 	public CombatTestEditorTarget(TargetInfo Target) : base(Target)
 	{
-		Type = TargetType.Editor;
+        bEnforceIWYU = true;
+        //bUseUnityBuild = true;
+        bUseUnityBuild = true; //  false
+        bUseIncrementalLinking = false;
+
+        Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 		ExtraModuleNames.Add("CombatTest");
 	}

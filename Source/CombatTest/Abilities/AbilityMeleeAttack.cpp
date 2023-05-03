@@ -2,6 +2,7 @@
 
 #include "Abilities/AbilityMeleeAttack.h"
 #include "CombatTestCharacter.h"
+#include "Abilities/UnitDataComponentBase.h"
 
 /*
 #include "AbilityMeleeAttack.h"
@@ -47,6 +48,7 @@ bool UAbilityMeleeAttack::CanActivateNow(ABaseCharacterClass *_Target)
 UAbilityMeleeAttack::UAbilityMeleeAttack()
 {
 	Range = 200; // Default for test melee range
+	BaseDamage = 20;
 }
 //-------------------------------------------------------------------------------------------------
 

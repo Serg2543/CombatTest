@@ -2,13 +2,12 @@
 
 
 #include "Abilities/UnitDataComponentBase.h"
-//#include "CombatTestCharacter.h"
-
 //#include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SlateWrapperTypes.h"
 
 #include "Abilities/AbilityMeleeAttack.h"
+#include "CombatTestCharacter.h"
 #include "CustomAIController.h"
 #include "CustomHUD.h"
 #include "CustomPlayerController.h"
@@ -55,7 +54,7 @@ void UUnitDataComponentBase::Kill()
 	UnitOwner->CustomAIController->UnPossess();
 	UnitOwner->CustomAIController->Destroy(); // Destroy the controller explicitly, because it it is not automatically destroyed after Unpossess()
 	bIsDead = true;
-	UnitOwner->WidgetHPBar->SetVisibility(ESlateVisibility::Hidden);
+
 	// Turn off collision with units
 	UnitOwner->SetActorEnableCollision(false);
 	// Change visual appearance

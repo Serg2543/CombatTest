@@ -4,12 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
-#include "CombatTestCharacter.h"
 #include "CustomHUD.generated.h"
 
-/**
- * 
- */
+class ACombatTestCharacter;
+
 UCLASS()
 class COMBATTEST_API ACustomHUD : public AHUD
 {

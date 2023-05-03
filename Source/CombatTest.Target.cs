@@ -7,7 +7,12 @@ public class CombatTestTarget : TargetRules
 {
 	public CombatTestTarget(TargetInfo Target) : base(Target)
 	{
-		Type = TargetType.Game;
+        bEnforceIWYU = true;
+        //bUseUnityBuild = true;
+        bUseUnityBuild = true; // false
+        bUseIncrementalLinking = false;
+
+        Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 		ExtraModuleNames.Add("CombatTest");
 	}

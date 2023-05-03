@@ -5,9 +5,13 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 
-#include "CombatTestCharacter.h"
+#include "BaseCharacterClass.h" // Replace the class name there
 
 #include "UnitDataComponentBase.generated.h"
+
+//class ABaseCharacterClass;
+class UAbilityComponentBase;
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class COMBATTEST_API UUnitDataComponentBase : public UActorComponent
@@ -29,7 +33,7 @@ public:
 
 	bool bBusy = false; // Flag to determine if any action is in progress;
 
-	TArray<class UAbilityComponentBase *> Abilities; // Use a custom array of components for more straightforward access, but add to the main array for memory management
+	TArray<UAbilityComponentBase *> Abilities; // Use a custom array of components for more straightforward access, but add to the main array for memory management
 
 	virtual void TakeDamage(float DamageTaken);
 	void Kill();

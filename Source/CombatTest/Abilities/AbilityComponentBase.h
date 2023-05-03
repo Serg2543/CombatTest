@@ -5,9 +5,11 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 
-#include "Abilities/UnitDataComponentBase.h"
+#include "BaseCharacterClass.h" // Replace the class name there
 
 #include "AbilityComponentBase.generated.h"
+
+//class ABaseCharacterClass;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class COMBATTEST_API UAbilityComponentBase : public UActorComponent

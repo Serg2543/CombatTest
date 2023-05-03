@@ -8,6 +8,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 
+#include "CombatTestCharacter.h"
+#include "CustomHUD.h"
+#include "CustomGameMode.h"
 #include "CustomAIController.h"
 #include "CustomGameInstance.h"
 #include "Abilities/UnitDataComponentBase.h"

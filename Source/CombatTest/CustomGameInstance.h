@@ -6,16 +6,15 @@
 #include "Engine/GameInstance.h"
 #include "CustomGameInstance.generated.h"
 
-/**
- * 
- */
+class ACombatTestCharacter;
+
 UCLASS()
 class COMBATTEST_API UCustomGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 	public:
 		UPROPERTY(EditAnywhere)
-			TSubclassOf<class ACombatTestCharacter> SpawnType;
+			TSubclassOf<ACombatTestCharacter> SpawnType;
 		UPROPERTY(EditAnywhere)
 			UMaterialInterface *MaterialTeam0 = NULL;
 		UPROPERTY(EditAnywhere)

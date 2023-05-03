@@ -7,6 +7,11 @@ public class CombatTest : ModuleRules
 	public CombatTest(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        
+        // Some compile time suggestions tests
+        //MinFilesUsingPrecompiledHeaderOverride = 1;
+        bEnforceIWYU = true;
+        bUseUnity = true; // false
 
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "NavigationSystem", "AIModule", "UMG" });
 

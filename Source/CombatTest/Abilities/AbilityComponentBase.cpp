@@ -3,6 +3,7 @@
 
 #include "Abilities/AbilityComponentBase.h"
 #include "CombatTestCharacter.h"
+#include "Abilities/UnitDataComponentBase.h"
 
 /*
 #include "AbilityComponentBase.h"

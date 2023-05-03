@@ -5,12 +5,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Navigation/CrowdFollowingComponent.h"
 
-/*
-#include "AbilityComponentBase.h"
-*/
-
+#include "CombatTestCharacter.h"
 #include "Abilities/AbilityComponentBase.h"
-
+#include "Abilities/UnitDataComponentBase.h"
 
 void ACustomAIController::Tick_Idle(float DeltaSeconds)
 {
