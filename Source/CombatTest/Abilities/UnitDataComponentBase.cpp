@@ -46,6 +46,7 @@ void UUnitDataComponentBase::Kill()
 	// Remove the actor from selection lists
 	ACustomPlayerController *CustomPlayerController = (ACustomPlayerController *)UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	ACustomHUD* CustomHUD = (ACustomHUD *)CustomPlayerController->GetHUD();
+	UnitOwner->SetSelected(false);
 	CustomPlayerController->SelectedActors.Remove(UnitOwner);
 	CustomHUD->SelectedActorsDragged.Remove(UnitOwner);
 
@@ -58,7 +59,7 @@ void UUnitDataComponentBase::Kill()
 	// Turn off collision with units
 	UnitOwner->SetActorEnableCollision(false);
 	// Change visual appearance
-	UnitOwner->MeshBody->SetMaterial(0, ((UCustomGameInstance *)GetWorld()->GetGameInstance())->MaterialDead);
+	UnitOwner->CompBody->SetMaterial(0, ((UCustomGameInstance *)GetWorld()->GetGameInstance())->MaterialDead);
 	//MeshBody->SetMaterial(0, MaterialBodyDead); // It causes an exception, when a lot of units are spawned
 	// Use a proper death animation
 

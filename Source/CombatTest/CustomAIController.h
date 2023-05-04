@@ -29,6 +29,8 @@ class COMBATTEST_API ACustomAIController : public AAIController
 		void Tick_HoldPosition(float DeltaSeconds);
 		
 		virtual void Tick(float DeltaSeconds) override;
+		virtual void UpdateControlRotation(float DeltaTime, bool bUpdatePawn) override;
+			float TestT = 0;
 
 		float AcquisitionRange = 10000; // Set for the whole world for now
 		void AcquireTarget();

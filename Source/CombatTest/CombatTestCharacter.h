@@ -34,16 +34,17 @@ public:
 
 	void SetSelected(bool _Selected);
 
-	// void Attack(ACombatTestCharacter* _Target); // Make an attak against the target
-
-
 	int Team = -1;
-	UMeshComponent *MeshBody = NULL;
-
-	UStaticMeshComponent *WeaponComponent = NULL;
-		float WeaponAnimPeriod = 1; // Pseudo-animation of the weapon mesh (rotate the socket)
-		float WeaponAnimDir = 1; // Pseudo-animation of the weapon mesh (rotate the socket)
-		float WeaponAnimPhase = 0;
+	UMeshComponent *CompBody = NULL;
+	UStaticMeshComponent *CompHead = NULL;
+	UStaticMeshComponent *CompFoot_L = NULL;
+	UStaticMeshComponent *CompFoot_R = NULL;
+		FVector Foot_L_BaseLoc;
+		FVector Foot_R_BaseLoc;
+		float MoveAnimPeriod = 1;
+		float MoveAnimTime = 0;
+	UStaticMeshComponent* CompHand_R = NULL;
+	UStaticMeshComponent *CompHand_L = NULL;
 	//USkeletalMeshComponent* MeshBody = NULL;
 	//UMaterialInstanceDynamic* MaterialBodyTeam0 = NULL, * MaterialBodyTeam1 = NULL, * MaterialBodyDead = NULL;
 	UWidgetComponent *WidgetComponent;

@@ -4,6 +4,9 @@
 #include "CustomAIController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Navigation/CrowdFollowingComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
+#include "Kismet/KismetMathLibrary.h"
 
 #include "CombatTestCharacter.h"
 #include "Abilities/AbilityComponentBase.h"
@@ -36,7 +39,10 @@ void ACustomAIController::Tick_Move(float DeltaSeconds)
 
 void ACustomAIController::Tick_AttackMove(float DeltaSeconds)
 {
-	if (Target == NULL) AcquireTarget(); // Attempt to acquire a target
+	//if (Target == NULL) 
+		AcquireTarget(); // Attempt to acquire a target
+		// Calling it every tick seems too much, but it makes sense for now
+
 	if (Target == NULL) // If there is still no target
 	{
 		Tick_Move(DeltaSeconds); // Keep moving normally
@@ -55,9 +61,11 @@ void ACustomAIController::Tick_AttackMove(float DeltaSeconds)
 		}
 		else
 		{
+			//SetFocalPoint(MoveLocation, EAIFocusPriority::Default); // Seems pointless - it is not updatedautomatically, so i have to do it manually
 			//	??? Movement can be an ability too, so it uses the same CanActivateNow()
 			if (!Unit->UnitDataComponent->bBusy) // Ckeck, if the unit is busy executing an ability
 			{
+				//Unit->GetMovementComponent()->
 				MoveToLocation(MoveLocation);
 			}
 			// It calls OnMoveCompleted each time. In this case, it doesn't matter, but may be a problem at some point.
@@ -119,6 +127,34 @@ void ACustomAIController::Tick(float DeltaSeconds)
 			Tick_AttackMove(DeltaSeconds);
 		}	
 	}
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomAIController::UpdateControlRotation(float DeltaTime, bool bUpdatePawn)
+{
+	Super::UpdateControlRotation(DeltaTime, bUpdatePawn);
+	// ??? Does it have to be a separate event? Put it in Tick()?
+	// It seems to be called even if movement is active, but doesn't change the rotation
+	if (Target && GetMoveStatus() != EPathFollowingStatus::Moving)
+	{
+		FRotator rot = UKismetMathLibrary::FindLookAtRotation(Unit->GetActorForwardVector(), Target->GetActorLocation() - Unit->GetActorLocation());
+		float a = acos(FVector::DotProduct(Unit->GetActorForwardVector(), (Target->GetActorLocation() - Unit->GetActorLocation()).GetSafeNormal()));
+		a += 0.01; // Prevent /0
+		float TurnSpeed = 0.5;
+		rot = FMath::RInterpTo(Unit->GetActorRotation(), rot, DeltaTime, TurnSpeed / (a / (2 * 3.14159265))); // It is scaled by angle, so un-scale it, so it becomes linear again
+		Unit->SetActorRotation(rot);
+	}
+	/*
+	TestT += DeltaTime;
+	if (TestT > 1)
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "UpdateControlRotation");
+		FVector v = GetFocalPoint();
+		FString s = FString::Printf(TEXT("ControlRotation: (%1.1f, %1.1f, %1.1f)"), v.X, v.Y, v.Z);
+		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, s);
+		TestT = 0;
+	}
+	*/
 }
 //-------------------------------------------------------------------------------------------------
 

@@ -127,11 +127,11 @@ void ACustomPlayerController::SpawnAI(int _Team)
 			if (Actor != NULL)
 			{
 				Actor->Team = _Team;
-				if (Actor->MeshBody) // Set materials to corresponding color
+				if (Actor->CompBody) // Set materials to corresponding color
 				{
 					
-					if (_Team == 0) Actor->MeshBody->SetMaterial(0, ((UCustomGameInstance*)GetWorld()->GetGameInstance())->MaterialTeam0);
-					else Actor->MeshBody->SetMaterial(0, ((UCustomGameInstance*)GetWorld()->GetGameInstance())->MaterialTeam1);
+					if (_Team == 0) Actor->CompBody->SetMaterial(0, ((UCustomGameInstance*)GetWorld()->GetGameInstance())->MaterialTeam0);
+					else Actor->CompBody->SetMaterial(0, ((UCustomGameInstance*)GetWorld()->GetGameInstance())->MaterialTeam1);
 
 					/*
 					if (_Team == 0) Actor->MeshBody->SetMaterial(0, Actor->MaterialBodyTeam0);
