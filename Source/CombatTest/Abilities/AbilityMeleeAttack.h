@@ -5,11 +5,9 @@
 #include "CoreMinimal.h"
 #include "Abilities/AbilityComponentBase.h"
 
-#include "BaseCharacterClass.h" // Replace the class name there
+#include "BaseCharacterClass.h" // Replace the character class name there
 
 #include "AbilityMeleeAttack.generated.h"
-
-//class ABaseCharacterClass;
 
 UCLASS()
 class COMBATTEST_API UAbilityMeleeAttack : public UAbilityComponentBase

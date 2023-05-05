@@ -5,11 +5,10 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 
-#include "BaseCharacterClass.h" // Replace the class name there
+#include "BaseCharacterClass.h" // Replace the character class name there
 
 #include "UnitDataComponentBase.generated.h"
 
-//class ABaseCharacterClass;
 class UAbilityComponentBase;
 
 
@@ -38,11 +37,13 @@ public:
 	virtual void TakeDamage(float DamageTaken);
 	void Kill();
 		bool IsDead() {	return bIsDead; }
-		float CorpseTimer = 3; // Time before the corpse is despawned
+		float CorpseTimer = 3; // Time before the corpse is despawned (temporary approach)
 
-	void SetOwner(ABaseCharacterClass *_UnitOwner); // Set owner for all abilities and items
+	void SetOwner(ABaseCharacterClass *_UnitOwner); // Set owner for this component, all abilities and items
 	ABaseCharacterClass *GetOwner() { return UnitOwner; }
+
 	/*
+		// ???
 		class UStatusEffects *StatusEffects; // Status effects can be a separate class, that holds a static set of values for each type of effect, rather than making each instance a separate object.
 	*/
 	UUnitDataComponentBase();

@@ -21,19 +21,12 @@ UCLASS(Blueprintable)
 class ACombatTestCharacter : public ACharacter
 {
 	GENERATED_BODY()
+protected:
+	virtual void Tick(float DeltaSeconds) override;
+	virtual void BeginPlay() override;
+	virtual void BeginDestroy() override;
 
 public:
-	ACombatTestCharacter();
-
-	/** Returns TopDownCameraComponent subobject **/
-	FORCEINLINE UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns CursorToWorld subobject **/
-	FORCEINLINE UDecalComponent* GetCursorToWorld() { return CursorToWorld; }
-
-	void SetSelected(bool _Selected);
-
 	int Team = -1;
 	UMeshComponent *CompBody = NULL;
 	UStaticMeshComponent *CompHead = NULL;
@@ -43,32 +36,18 @@ public:
 		FVector Foot_R_BaseLoc;
 		float MoveAnimPeriod = 1;
 		float MoveAnimTime = 0;
-	UStaticMeshComponent* CompHand_R = NULL;
+	UStaticMeshComponent *CompHand_R = NULL;
 	UStaticMeshComponent *CompHand_L = NULL;
 	//USkeletalMeshComponent* MeshBody = NULL;
 	//UMaterialInstanceDynamic* MaterialBodyTeam0 = NULL, * MaterialBodyTeam1 = NULL, * MaterialBodyDead = NULL;
 	UWidgetComponent *WidgetComponent;
 	UUserWidget *UserWidget;
 	UProgressBar *WidgetHPBar = NULL;
+	UStaticMeshComponent *SelectionCircle = NULL;
 	
 	ACustomAIController* CustomAIController; // Store it, so it doesn't have to be found every tick. Initialize in BeginPlay
 	UUnitDataComponentBase *UnitDataComponent = NULL;
 
-protected:
-	virtual void Tick(float DeltaSeconds) override;
-	virtual void BeginPlay() override;
-	virtual void BeginDestroy() override;
-
-private:
-	/** Top down camera */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		UCameraComponent* TopDownCameraComponent;
-
-	/** Camera boom positioning the camera above the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		USpringArmComponent* CameraBoom;
-
-	/** A decal that projects to the cursor location. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		UDecalComponent* CursorToWorld;
+	void SetSelected(bool _Selected);
+	ACombatTestCharacter();
 };

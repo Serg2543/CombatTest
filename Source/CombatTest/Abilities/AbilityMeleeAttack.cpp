@@ -4,11 +4,6 @@
 #include "CombatTestCharacter.h"
 #include "Abilities/UnitDataComponentBase.h"
 
-/*
-#include "AbilityMeleeAttack.h"
-#include "../CombatTestCharacter.h"
-*/
-
 void UAbilityMeleeAttack::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -32,23 +27,8 @@ void UAbilityMeleeAttack::StartActivating(ABaseCharacterClass *_Target)
 
 bool UAbilityMeleeAttack::CanActivateNow(ABaseCharacterClass *_Target)
 {
-	// Do not test for valid target - some abilities can be activated without a target. Or use a tag for this type of abilities and test the target for other types?
-	if (UnitOwner->UnitDataComponent->bBusy) return false; // Requires no action is in progress
-	// !bInProgress // Current action is not in progress - seems unnecessary, because it will also set bBusy
-
-	if (_Target == NULL) return false; // Do not allow free-form attacks for now
-	// Check range and orientation
-	float AngleThreshold = 10;
-		AngleThreshold = cos(AngleThreshold / 180 * 3.14159265);
-	FVector v = _Target->GetActorLocation() - UnitOwner->GetActorLocation();
-	float Dist = v.Size();
-	
-	if (Dist <= Range && // Target is in range
-		FVector::DotProduct(UnitOwner->GetActorForwardVector(), v) / Dist > AngleThreshold) // Target is in front
-	{
-		return true;
-	}
-	return false;
+	return Super::CanActivateNow(_Target) &&
+		_Target != NULL; // Do not allow free-form attacks for now
 }
 //-------------------------------------------------------------------------------------------------
 

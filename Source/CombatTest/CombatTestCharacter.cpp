@@ -2,25 +2,15 @@
 
 #include "CombatTestCharacter.h"
 
-#include "UObject/ConstructorHelpers.h"
-#include "Components/DecalComponent.h"
+//#include "UObject/ConstructorHelpers.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/PlayerController.h"
-#include "Engine/World.h"
+//#include "GameFramework/PlayerController.h"
+//#include "Engine/World.h"
 
-// ??? Remove default code
-#include "Camera/CameraComponent.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "HeadMountedDisplayFunctionLibrary.h"
-
-//#include "Materials/Material.h"
-//#include "Materials/MaterialInstanceDynamic.h"
-//#include "Blueprint/AIBlueprintHelperLibrary.h"
-//#include "Navigation/PathFollowingComponent.h"
-#include "Kismet/KismetSystemLibrary.h"
+//#include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetMathLibrary.h"
+//#include "Kismet/KismetMathLibrary.h"
 
 #include "Components/WidgetComponent.h"
 #include "Components/ProgressBar.h"
@@ -31,64 +21,6 @@
 #include "CustomGameInstance.h"
 #include "Abilities/UnitDataComponentBase.h"
 #include "Abilities/AbilityMeleeAttack.h"
-
-ACombatTestCharacter::ACombatTestCharacter()
-{
-	// Set size for player capsule
-	//GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-
-	// Don't rotate character to camera direction
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
-
-	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Rotate character to moving direction
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 640.f, 0.f);
-	GetCharacterMovement()->bConstrainToPlane = true;
-	GetCharacterMovement()->bSnapToPlaneAtStart = true;
-
-	// Create a camera boom...
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->SetUsingAbsoluteRotation(true); // Don't want arm to rotate when character does
-	CameraBoom->TargetArmLength = 800.f;
-	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
-	CameraBoom->bDoCollisionTest = false; // Don't want to pull camera in when it collides with level
-
-	// Create a camera...
-	TopDownCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
-	TopDownCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	TopDownCameraComponent->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
-
-	// Create a decal in the world to show the cursor's location
-	CursorToWorld = CreateDefaultSubobject<UDecalComponent>("CursorToWorld");
-	CursorToWorld->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UMaterial> DecalMaterialAsset(TEXT("Material'/Game/TopDownCPP/Blueprints/M_Cursor_Decal.M_Cursor_Decal'"));
-	if (DecalMaterialAsset.Succeeded())
-	{
-		CursorToWorld->SetDecalMaterial(DecalMaterialAsset.Object);
-	}
-	CursorToWorld->DecalSize = FVector(16.0f, 32.0f, 32.0f);
-	CursorToWorld->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f).Quaternion());
-	CursorToWorld->SetVisibility(false);
-
-	// Activate ticking in order to update the cursor every frame.
-	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = true;
-
-	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-
-	// Initializae UitData component
-	UnitDataComponent = CreateDefaultSubobject<UUnitDataComponentBase>(TEXT("UnitData"));
-	//UnitDataComponent->RegisterComponent();//ma->RegisterComponent(); // Exception
-	//UnitDataComponent->UnitOwner = this;
-	
-	//UnitDataComponent->SetupAttachment(RootComponent);
-	AddInstanceComponent(UnitDataComponent);
-	UnitDataComponent->SetOwner(this);
-}
-//-------------------------------------------------------------------------------------------------
 
 void ACombatTestCharacter::Tick(float DeltaSeconds)
 {
@@ -125,7 +57,6 @@ void ACombatTestCharacter::Tick(float DeltaSeconds)
 	}
 	else GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "WidgetHPBar == NULL");
 
-	
 	// Pseudo-animation
 		// Weapon
 		float t = UnitDataComponent->Abilities[0]->TimeCounter;
@@ -169,12 +100,6 @@ void ACombatTestCharacter::Tick(float DeltaSeconds)
 }
 //-------------------------------------------------------------------------------------------------
 
-void ACombatTestCharacter::SetSelected(bool _Selected)
-{
-	CursorToWorld->SetVisibility(_Selected);
-}
-//-------------------------------------------------------------------------------------------------
-
 void ACombatTestCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -182,11 +107,6 @@ void ACombatTestCharacter::BeginPlay()
 	// Store AIController, so it doesn't have to be retreived every time
 	CustomAIController = Cast<ACustomAIController>(this->GetController());
 	if (CustomAIController == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CustomAIController == NULL");
-
-	/*
-	((UCharacterMovementComponent*)GetMovementComponent())->bUseControllerDesiredRotation = true;
-	if (((UCharacterMovementComponent *)GetMovementComponent())->bUseControllerDesiredRotation) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, "bUseControllerDesiredRotation == true");
-	*/
 
 	// Store WidgetComponent for HP bar, so it doesn't have to be retreived every time
 	WidgetComponent = FindComponentByClass<UWidgetComponent>();
@@ -231,6 +151,10 @@ void ACombatTestCharacter::BeginPlay()
 					Foot_R_BaseLoc = CompFoot_R->GetRelativeLocation();
 				}
 			}
+			else // FIX: For now, the only other mesh is selection circle, but it is lazy
+			{
+				SelectionCircle = meshcomp;
+			}
 		}
 	}
 	
@@ -242,40 +166,68 @@ void ACombatTestCharacter::BeginPlay()
 	if (CompHand_R == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CompHand_R == NULL");
 
 	// Initialize materials for team colors
-	/*
-	// Tutorial for dynamic materials: https://www.youtube.com/watch?v=AsAx9HObtIY
-	// FIX: Don't have to be in each instance of an actor, use GameInstance
-	// Had an exception in KIll() {... MeshBody->SetMaterial(0, MaterialBodyDead); ...} after spawning a lot of unit
-	// https://couchlearn.com/how-to-use-the-game-instance-in-unreal-engine-4/
-	*/
-	/*
-	MeshBody = FindComponentByClass<USkeletalMeshComponent>();
-	if (MeshBody == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Mesh == NULL");
-	else
-	{
-		UMaterialInterface* Mat = MeshBody->GetMaterial(0);
-		if (Mat == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Static material == NULL");
-		else
-		{
-			MaterialBodyTeam0 = UMaterialInstanceDynamic::Create(MeshBody->GetMaterial(0), NULL);
-			if (MaterialBodyTeam0 == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "MaterialBodyTeam0 == NULL");
-			else MaterialBodyTeam0->SetVectorParameterValue(FName(TEXT("BodyColor")), FLinearColor(0.9f, 0.1f, 0.1f));
-
-			MaterialBodyTeam1 = UMaterialInstanceDynamic::Create(MeshBody->GetMaterial(0), NULL);
-			if (MaterialBodyTeam1 == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "MaterialBodyTeam1 == NULL");
-			else MaterialBodyTeam1->SetVectorParameterValue(FName(TEXT("BodyColor")), FLinearColor(0.1f, 0.1f, 0.9f));
-			
-			MaterialBodyDead = UMaterialInstanceDynamic::Create(MeshBody->GetMaterial(0), NULL);
-			if (MaterialBodyDead == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "MaterialBodyDead == NULL");
-			else MaterialBodyDead->SetVectorParameterValue(FName(TEXT("BodyColor")), FLinearColor(0.4f, 0.4f, 0.0f));
-		}
-	}
-	*/
 }
 //-------------------------------------------------------------------------------------------------
 
 void ACombatTestCharacter::BeginDestroy()
 {
 	Super::BeginDestroy();
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACombatTestCharacter::SetSelected(bool _Selected)
+{
+	SelectionCircle->SetVisibility(_Selected);
+}
+//-------------------------------------------------------------------------------------------------
+
+ACombatTestCharacter::ACombatTestCharacter()
+{
+	// From the template
+	// Set size for player capsule
+	//GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+
+	// Don't rotate character to camera direction
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+
+	// Configure character movement
+	GetCharacterMovement()->bOrientRotationToMovement = true; // Rotate character to moving direction
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 640.f, 0.f);
+	GetCharacterMovement()->bConstrainToPlane = true;
+	GetCharacterMovement()->bSnapToPlaneAtStart = true;
+
+	// Activate ticking in order to update the cursor every frame.
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = true;
+
+	// Custom code
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	// Initializae UitData component
+	UnitDataComponent = CreateDefaultSubobject<UUnitDataComponentBase>(TEXT("UnitData"));
+	//UnitDataComponent->RegisterComponent();//ma->RegisterComponent(); // Exception
+	//UnitDataComponent->UnitOwner = this;
+
+	//UnitDataComponent->SetupAttachment(RootComponent);
+	AddInstanceComponent(UnitDataComponent);
+	UnitDataComponent->SetOwner(this);
+
+	/*
+	// Tried to load dynamically, like the decal in the template example, but it seems to not work
+	// Add #include "UObject/ConstructorHelpers.h"
+	SelectionCircle = CreateDefaultSubobject<UStaticMeshComponent>("SelectionCircle");
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SelectionCircleStaticMesh(TEXT("StaticMesh'/Game/TopDownCPP/GrayboxCharacter/Selection_GB.Selection_GB'"));
+	if (SelectionCircleStaticMesh.Succeeded())
+	{
+		SelectionCircle->SetStaticMesh(SelectionCircleStaticMesh.Object);
+	}
+	static ConstructorHelpers::FObjectFinder<UMaterial> SelectionCircleMaterial(TEXT("Material'/Game/TopDownCPP/GrayboxCharacter/Materials/M_Selection.M_Selection'"));
+	if (SelectionCircleMaterial.Succeeded())
+	{
+		SelectionCircle->SetMaterial(0, SelectionCircleMaterial.Object);
+	}
+	*/
 }
 //-------------------------------------------------------------------------------------------------

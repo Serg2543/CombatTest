@@ -4,7 +4,7 @@
 #include "Abilities/UnitDataComponentBase.h"
 //#include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "Components/SlateWrapperTypes.h"
+//#include "Components/SlateWrapperTypes.h"
 
 #include "Abilities/AbilityMeleeAttack.h"
 #include "CombatTestCharacter.h"
@@ -13,36 +13,21 @@
 #include "CustomPlayerController.h"
 #include "CustomGameInstance.h"
 
-/*
-#include "UnitDataComponentBase.h"
-#include "../CombatTestCharacter.h"
-#include "AbilityMeleeAttack.h"
-*/
-
 void UUnitDataComponentBase::TakeDamage(float DamageTaken)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, "Take damage");
 	HP -= DamageTaken;
 	if (HP <= 0)
 	{
-		Kill(); // FIX: ??? Notify the unit
+		Kill();
 	}
-	/*
-		// Moved widget update logic into the character - it checks scale to set visibility, so it has to be updated every tick. And it makes more sense architrecture-wise: the component won't always know, what components and properties the character has.
-	else if (UnitOwner->WidgetHPBar)
-	{
-		//Percent = 0.9; // Debug
-		//UnitOwner->WidgetHPBar->Percent = Percent; // Doesn't work, have to use Set...() method explicitly
-		UnitOwner->WidgetHPBar->SetPercent(Percent);
-		UnitOwner->WidgetHPBar->SetVisibility(Percent < 1 ? ESlateVisibility::Visible : ESlateVisibility::Hidden); // Show only if < 100%
-	}
-	else GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "WidgetHPBar == NULL");
-	*/
 }
 //-------------------------------------------------------------------------------------------------
 
 void UUnitDataComponentBase::Kill()
 {
+	// FIX: ??? Notify the unit
+
 	// Remove the actor from selection lists
 	ACustomPlayerController *CustomPlayerController = (ACustomPlayerController *)UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	ACustomHUD* CustomHUD = (ACustomHUD *)CustomPlayerController->GetHUD();
@@ -60,10 +45,7 @@ void UUnitDataComponentBase::Kill()
 	UnitOwner->SetActorEnableCollision(false);
 	// Change visual appearance
 	UnitOwner->CompBody->SetMaterial(0, ((UCustomGameInstance *)GetWorld()->GetGameInstance())->MaterialDead);
-	//MeshBody->SetMaterial(0, MaterialBodyDead); // It causes an exception, when a lot of units are spawned
 	// Use a proper death animation
-
-	//Destroy(); // The simplest handling
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -99,14 +81,8 @@ UUnitDataComponentBase::UUnitDataComponentBase()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
-
 	UAbilityMeleeAttack *AbilityMeleeAttack= CreateDefaultSubobject<UAbilityMeleeAttack>(TEXT("MeleeAttack")); // Have no idea, what exactly it does - copying the approach with the camera from dafault code above
-	//ma->AddInstanceComponent(UnitDataComponent);
-	//ma->RegisterComponent(); // Exception
-	//ma->UnitOwner = UnitOwner;
+	//AddInstanceComponent(UnitDataComponent); // Worked without that, but seems like it is a proper thing to do (or something like this to let the engine to handle the component). Should the actor be the object, that calls this?
 	Abilities.Add(AbilityMeleeAttack); // ??? How to add it to a default array of components? Or simply manually destroy it?
-
-	//UAbilityMeleeAttack *ma = new UAbilityMeleeAttack(_UnitOwner);
 }
 //-------------------------------------------------------------------------------------------------

@@ -1,57 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "CustomPlayerController.h"
-#include "CustomGameMode.h"
-#include "Containers/UnrealString.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
-#include "Navigation/PathFollowingComponent.h"
+//#include "Containers/UnrealString.h"
+//#include "Blueprint/AIBlueprintHelperLibrary.h"
+//#include "Navigation/PathFollowingComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 
 #include "CombatTestCharacter.h"
 #include "CustomHUD.h"
-#include "CustomGameMode.h"
 #include "CustomAIController.h"
 #include "CustomGameInstance.h"
 #include "Abilities/UnitDataComponentBase.h"
 
-ACustomPlayerController::ACustomPlayerController()
-{
-	bShowMouseCursor = true;
-	DefaultMouseCursor = EMouseCursor::Hand;
-}
-//-------------------------------------------------------------------------------------------------
-
-void ACustomPlayerController::BeginPlay()
-{
-	Super::BeginPlay();
-
-	HUD = Cast<ACustomHUD>(GetHUD());
-
-	AGameModeBase* GameModeBase = UGameplayStatics::GetGameMode(GetWorld());
-	if (GameModeBase == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "GameModeBase == NULL");
-	else
-	{
-		GameMode = Cast<ACustomGameMode >(GameModeBase);
-		if (GameMode == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "GameMode cast failed");
-	}
-}
-//-------------------------------------------------------------------------------------------------
-
-void ACustomPlayerController::SetupInputComponent()
-{
-	Super::SetupInputComponent();
-	InputComponent->BindAction("LClick", IE_Pressed, this, &ACustomPlayerController::SelectionPressed);
-	InputComponent->BindAction("LClick", IE_Released, this, &ACustomPlayerController::SelectionReleased);
-
-	InputComponent->BindAction("RClick", IE_Released, this, &ACustomPlayerController::MoveReleased);
-
-	InputComponent->BindAction("SpawnAI_0", IE_Pressed, this, &ACustomPlayerController::SpawnAI_0);
-	InputComponent->BindAction("SpawnAI_1", IE_Pressed, this, &ACustomPlayerController::SpawnAI_1);
-}
-//-------------------------------------------------------------------------------------------------
-
-void ACustomPlayerController::SelectionPressed()
+void ACustomPlayerController::LButtonPressed()
 {
 	if (HUD)
 	{
@@ -61,7 +23,7 @@ void ACustomPlayerController::SelectionPressed()
 }
 //-------------------------------------------------------------------------------------------------
 
-void ACustomPlayerController::SelectionReleased()
+void ACustomPlayerController::LButtonReleased()
 {
 	if (HUD)
 	{
@@ -71,7 +33,7 @@ void ACustomPlayerController::SelectionReleased()
 }
 //-------------------------------------------------------------------------------------------------
 
-void ACustomPlayerController::MoveReleased()
+void ACustomPlayerController::RButtonPressed()
 {
 	FHitResult HitResult;
 	GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, false, HitResult);
@@ -82,6 +44,19 @@ void ACustomPlayerController::MoveReleased()
 	FVector MoveLocation;
 	MoveLocation.Z = HitResult.Location.Z;
 
+	for (int i = 0; i < SelectedActors.Num(); i++)
+	{
+		MoveLocation.X = HitResult.Location.X + i / 2 * 100;
+		MoveLocation.Y = HitResult.Location.Y + i % 2 * 100;
+		ACustomAIController* AIController = (ACustomAIController*)SelectedActors[i]->GetController();
+		AIController->CommandMoveTo(MoveLocation);
+		
+		DrawDebugSphere(GetWorld(), MoveLocation, 25, 10, FColor::Red, false, 3);
+	}
+
+	/*
+	// Old logic, before i removed the unit from selection lists
+	// It works, but seems unnecessary
 	int n = 0; // Count actual amount, if some actors were skipped
 	for (int i = 0; i < SelectedActors.Num(); i++)
 	{
@@ -98,6 +73,7 @@ void ACustomPlayerController::MoveReleased()
 			DrawDebugSphere(GetWorld(), MoveLocation, 25, 10, FColor::Red, false, 3);
 		}
 	}
+	*/
 
 	/*
 	FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation();
@@ -108,40 +84,67 @@ void ACustomPlayerController::MoveReleased()
 }
 //-------------------------------------------------------------------------------------------------
 
+void ACustomPlayerController::CommandStop()
+{
+	for (int i = 0; i < SelectedActors.Num(); i++)
+	{
+		ACustomAIController *AIController = (ACustomAIController *)SelectedActors[i]->GetController();
+		AIController->CommandStop();
+	}
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomPlayerController::CommandHoldPosition()
+{
+	for (int i = 0; i < SelectedActors.Num(); i++)
+	{
+		ACustomAIController *AIController = (ACustomAIController *)SelectedActors[i]->GetController();
+		AIController->CommandHoldPosition();
+	}
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomPlayerController::CommandDisable()
+{
+	for (int i = 0; i < SelectedActors.Num(); i++)
+	{
+		ACustomAIController *AIController = (ACustomAIController*)SelectedActors[i]->GetController();
+		AIController->CommandDisable();
+	}
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomPlayerController::CommandAttackMoveTo()
+{
+}
+//-------------------------------------------------------------------------------------------------
+
 void ACustomPlayerController::SpawnAI(int _Team)
 {
-	if (GameMode) // FIX: Remove GameMode, it is replaced by GameInstance
+	FVector Location = LastHit;
+	Location.X += 100;
+	// Floor box coordinates: X:(-1660, 1140), Y:(-1900, 1900), Z:(167.5)
+	Location.Z = 167.5;
+	int i = 0;
+	ACombatTestCharacter* Actor = NULL;
+	do
 	{
-		FVector Location = LastHit;
-		Location.X += 100;
-		// Floor box coordinates: X:(-1660, 1140), Y:(-1900, 1900), Z:(167.5)
-		Location.Z = 167.5;
-		int i = 0;
-		ACombatTestCharacter* Actor = NULL;
-		do
+		Location.X = FMath::RandRange(-1660, 1140);
+		Location.Y = FMath::RandRange(-1900, 1900);
+
+		Actor = (ACombatTestCharacter*)GetWorld()->SpawnActor(((UCustomGameInstance*)GetWorld()->GetGameInstance())->SpawnType, &Location);
+		if (Actor != NULL)
 		{
-			Location.X = FMath::RandRange(-1660, 1140);
-			Location.Y = FMath::RandRange(-1900, 1900);
-
-			Actor = (ACombatTestCharacter *)GetWorld()->SpawnActor(((UCustomGameInstance*)GetWorld()->GetGameInstance())->SpawnType, &Location);
-			if (Actor != NULL)
+			Actor->Team = _Team;
+			if (Actor->CompBody) // Set materials to corresponding color
 			{
-				Actor->Team = _Team;
-				if (Actor->CompBody) // Set materials to corresponding color
-				{
-					
-					if (_Team == 0) Actor->CompBody->SetMaterial(0, ((UCustomGameInstance*)GetWorld()->GetGameInstance())->MaterialTeam0);
-					else Actor->CompBody->SetMaterial(0, ((UCustomGameInstance*)GetWorld()->GetGameInstance())->MaterialTeam1);
 
-					/*
-					if (_Team == 0) Actor->MeshBody->SetMaterial(0, Actor->MaterialBodyTeam0);
-					else Actor->MeshBody->SetMaterial(0, Actor->MaterialBodyTeam1);
-					*/
-				}
+				if (_Team == 0) Actor->CompBody->SetMaterial(0, ((UCustomGameInstance*)GetWorld()->GetGameInstance())->MaterialTeam0);
+				else Actor->CompBody->SetMaterial(0, ((UCustomGameInstance*)GetWorld()->GetGameInstance())->MaterialTeam1);
 			}
-		} while (Actor == NULL && i++ < 5); // Try several times, if random picks unsuitable position
-		if (Actor == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Spawn failed");
-	}
+		}
+	} while (Actor == NULL && i++ < 5); // Try several times, if random picks unsuitable position
+	if (Actor == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Spawn failed");
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -154,5 +157,38 @@ void ACustomPlayerController::SpawnAI_0()
 void ACustomPlayerController::SpawnAI_1()
 {
 	SpawnAI(1);
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	HUD = Cast<ACustomHUD>(GetHUD());
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+	InputComponent->BindAction("LClick", IE_Pressed, this, &ACustomPlayerController::LButtonPressed);
+	InputComponent->BindAction("LClick", IE_Released, this, &ACustomPlayerController::LButtonReleased);
+
+	InputComponent->BindAction("RClick", IE_Pressed, this, &ACustomPlayerController::RButtonPressed);
+
+	InputComponent->BindAction("CommandHoldPosition", IE_Pressed, this, &ACustomPlayerController::CommandHoldPosition);
+	InputComponent->BindAction("CommandStop", IE_Pressed, this, &ACustomPlayerController::CommandStop);
+	InputComponent->BindAction("CommandDisable", IE_Pressed, this, &ACustomPlayerController::CommandDisable);
+	InputComponent->BindAction("CommandAttackMoveTo", IE_Pressed, this, &ACustomPlayerController::CommandAttackMoveTo);
+
+	InputComponent->BindAction("SpawnAI_0", IE_Pressed, this, &ACustomPlayerController::SpawnAI_0);
+	InputComponent->BindAction("SpawnAI_1", IE_Pressed, this, &ACustomPlayerController::SpawnAI_1);
+}
+//-------------------------------------------------------------------------------------------------
+
+ACustomPlayerController::ACustomPlayerController()
+{
+	bShowMouseCursor = true;
+	DefaultMouseCursor = EMouseCursor::Hand;
 }
 //-------------------------------------------------------------------------------------------------

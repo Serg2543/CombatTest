@@ -12,8 +12,20 @@
 #include "Abilities/AbilityComponentBase.h"
 #include "Abilities/UnitDataComponentBase.h"
 
+void ACustomAIController::Tick_HoldPosition(float DeltaSeconds)
+{
+	// ??? The same, as Idle, but it will be checked later to prevent movement
+	AcquireTarget();
+	// Do not use for now
+}
+//-------------------------------------------------------------------------------------------------
+
 void ACustomAIController::Tick_Idle(float DeltaSeconds)
 {
+	AcquireTarget();
+	/*
+	// Old logic, but working
+
 	if (Target == NULL) AcquireTarget(); // Attempt to acquire a target
 	if (Target == NULL) // If there is still no target
 	{
@@ -24,6 +36,7 @@ void ACustomAIController::Tick_Idle(float DeltaSeconds)
 		UnitCommand = EUC_AttackMove; // A-move to current position. 
 		// FIX: use MoveDestination to store current position, so the unit will chase the target, then return.
 	}
+	*/
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -39,6 +52,29 @@ void ACustomAIController::Tick_Move(float DeltaSeconds)
 
 void ACustomAIController::Tick_AttackMove(float DeltaSeconds)
 {
+	AcquireTarget();
+	if (Target != NULL) // If a target is found
+	{
+		MoveTo(Target->GetActorLocation()); // Chase the target
+		// Stop after getting in range will be handled manually
+	}
+	else // If no target is found
+	{
+		MoveTo(MoveDestination); // Resume normall movement
+		Tick_Move(DeltaSeconds);
+	}
+
+	/*
+			AcquireTarget(); // Even if there is a target already, reevaluate and pick a new one
+			if (Target == NULL) // Or invalid in any other way
+				MoveTo(); // Keep moving to destination. It will be the same, und updating it is not necessary, but it can still be updated anyway - it is the same, as updating moving target's location.
+			else
+				// No actions are necessary - the logic will be applied later, after any command finds a target
+	*/
+
+
+	/*
+	// Old logic, but working
 	//if (Target == NULL) 
 		AcquireTarget(); // Attempt to acquire a target
 		// Calling it every tick seems too much, but it makes sense for now
@@ -63,7 +99,7 @@ void ACustomAIController::Tick_AttackMove(float DeltaSeconds)
 		{
 			//SetFocalPoint(MoveLocation, EAIFocusPriority::Default); // Seems pointless - it is not updatedautomatically, so i have to do it manually
 			//	??? Movement can be an ability too, so it uses the same CanActivateNow()
-			if (!Unit->UnitDataComponent->bBusy) // Ckeck, if the unit is busy executing an ability
+			if (!Unit->UnitDataComponent->bBusy) // Check, if the unit is busy executing an ability
 			{
 				//Unit->GetMovementComponent()->
 				MoveToLocation(MoveLocation);
@@ -73,88 +109,112 @@ void ACustomAIController::Tick_AttackMove(float DeltaSeconds)
 			// Do not use MoveToActor - sometimes destination will require updates every tick anyway (the unit will want to move not directly towards the target: anticipate and intercept, kite, etc). But in that case, reaching destination will be irrelevant - it will be a custom check anyway?
 		}
 	}
+	*/
 }
 //-------------------------------------------------------------------------------------------------
 
 void ACustomAIController::Tick_AttackTarget(float DeltaSeconds)
 {
-	Tick_AttackMove(DeltaSeconds); // For now, there is no difference - if the unit has a target, it will move towards it
-	// Can have different logic, if target is destroyed: do not continue moving to a-move destination, but stop in place
-}
-//-------------------------------------------------------------------------------------------------
-
-void ACustomAIController::Tick_HoldPosition(float DeltaSeconds)
-{
-	// Do not use for now
-	/*
-		// ??? The same, as AttackMove, but add checks to move only if the command is actually a-move
-		Tick_AttackMove(DeltaSeconds);
-		// Can add a check for moving too far away
-	*/
+	if (Target != NULL)
+	{
+		MoveTo(Target->GetActorLocation()); // Chase the target
+		// Stop after getting in range will be handled manually
+	}
+	else
+	{
+		CommandStop();
+		// Can store target's last location and go there
+	}
 }
 //-------------------------------------------------------------------------------------------------
 
 void ACustomAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	
-	/*
-	Unit = Cast<ACombatTestCharacter>(GetPawn());
-	if (Unit == NULL) return;
-	*/
-
-	if (Unit->UnitDataComponent->bBusy)
+	if (Target && (Target->UnitDataComponent->IsDead() || Target->IsPendingKill())) // Check, if the target is dead in the game or destroyed in the engine, and invalidate it explicitly, so it is easier to handle
 	{
-		// Disable movement
+		// (...) || (Ability && !Ability->IsTargetValid(Target)) // When abilities are implemented fully
+		Target = NULL;
 	}
-
-	if (Target && (Target->UnitDataComponent->IsDead() || Target->IsPendingKill())) Target = NULL; // Check, if the target is dead in the game or destroyed in the engine
-
-	if (!Unit->UnitDataComponent->IsDead()) // It seems redundant - the unit will be unpossessed
-		// But have to check for other unit states, that prevent acting (attacking, hit recovery, stun, etc) - they will be handled by the unit. It can be a general "BlocksAI" flag? Or set CanTick directly?
-		// Some actions can be interrupted intentionally: can make sense to start a dodge roll during an attack		
+	// -------
+	if (UnitCommand == EUC_Disable)
 	{
-		if (UnitCommand == EUC_Idle) // The unit is idle
+		return; // Return explicitly, just in case
+	}
+	else if (Unit->UnitDataComponent->bBusy)
+	{
+		// An ability is in progress, so most behavior is not available			
+		// But there can be actions, that can still be performed			
+		if (Target)
+		{
+			RotateToTarget(DeltaSeconds); // Can still "aim" the attack or ability to keep the target in angle			
+		}
+	}
+	else // If !bBusy
+	{
+		// Resolve commands			
+		if (UnitCommand == EUC_Idle)
 		{
 			Tick_Idle(DeltaSeconds);
+			// Can roam around, etc		
 		}
-		else if (UnitCommand == EUC_Move) // A manual move order was issued
+		else if (UnitCommand == EUC_Move)
 		{
 			Tick_Move(DeltaSeconds);
 		}
-		else if (UnitCommand == EUC_AttackMove) // A-move
+		else if (UnitCommand == EUC_AttackMove)
 		{
 			Tick_AttackMove(DeltaSeconds);
-		}	
+		}
+		else if (UnitCommand == EUC_AttackTarget)
+		{
+			Tick_AttackTarget(DeltaSeconds);
+		}
+		else if (UnitCommand == EUC_HoldPosition)
+		{
+			Tick_HoldPosition(DeltaSeconds);
+		}
+		// -------
+		if (Target)
+		{
+			// If any command found a valid target, execute the same logic (almost)			
+			// Get in range, rotate towards it and activate the ability			
+			if (!Ability->IsTargetInRange(Target))
+			{
+				if (UnitCommand != EUC_HoldPosition)
+				{
+					MoveTo(Target->GetActorLocation());
+				}
+				else
+				{
+					RotateToTarget(DeltaSeconds); // Keep rotating to face the target, when it gets in range
+				}
+			}
+			else
+			{
+				StopMovement(); // Prevent AI derping around
+				if (!Ability->IsTargetInAngle(Target))
+				{
+					RotateToTarget(DeltaSeconds);
+				}
+				else
+				{
+					Ability->StartActivating(Target);
+				}
+			}
+		}
 	}
 }
 //-------------------------------------------------------------------------------------------------
 
-void ACustomAIController::UpdateControlRotation(float DeltaTime, bool bUpdatePawn)
+void ACustomAIController::RotateToTarget(float DeltaSeconds)
 {
-	Super::UpdateControlRotation(DeltaTime, bUpdatePawn);
-	// ??? Does it have to be a separate event? Put it in Tick()?
-	// It seems to be called even if movement is active, but doesn't change the rotation
-	if (Target && GetMoveStatus() != EPathFollowingStatus::Moving)
-	{
-		FRotator rot = UKismetMathLibrary::FindLookAtRotation(Unit->GetActorForwardVector(), Target->GetActorLocation() - Unit->GetActorLocation());
-		float a = acos(FVector::DotProduct(Unit->GetActorForwardVector(), (Target->GetActorLocation() - Unit->GetActorLocation()).GetSafeNormal()));
-		a += 0.01; // Prevent /0
-		float TurnSpeed = 0.5;
-		rot = FMath::RInterpTo(Unit->GetActorRotation(), rot, DeltaTime, TurnSpeed / (a / (2 * 3.14159265))); // It is scaled by angle, so un-scale it, so it becomes linear again
-		Unit->SetActorRotation(rot);
-	}
-	/*
-	TestT += DeltaTime;
-	if (TestT > 1)
-	{
-		//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "UpdateControlRotation");
-		FVector v = GetFocalPoint();
-		FString s = FString::Printf(TEXT("ControlRotation: (%1.1f, %1.1f, %1.1f)"), v.X, v.Y, v.Z);
-		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Green, s);
-		TestT = 0;
-	}
-	*/
+	FRotator rot = UKismetMathLibrary::FindLookAtRotation(Unit->GetActorForwardVector(), Target->GetActorLocation() - Unit->GetActorLocation());
+	float a = acos(FVector::DotProduct(Unit->GetActorForwardVector(), (Target->GetActorLocation() - Unit->GetActorLocation()).GetSafeNormal()));
+	a += 0.01; // Prevent /0
+	float TurnSpeed = 0.5;
+	rot = FMath::RInterpTo(Unit->GetActorRotation(), rot, DeltaSeconds, TurnSpeed / (a / (2 * 3.14159265))); // It is scaled by angle, so un-scale it, so it becomes linear again
+	Unit->SetActorRotation(rot);
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -168,7 +228,8 @@ void ACustomAIController::AcquireTarget()
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACombatTestCharacter::StaticClass(), OutActors);
 
 	if (OutActors.Num() == 0) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Find actors - no results");
-	Target = NULL;
+	// Can treat current target differently to prevent switching targets back and forth
+	ACombatTestCharacter *NewTarget = NULL;
 	float DistMinSquared = AcquisitionRange * AcquisitionRange;
 	float DistCurSquared;
 	FVector pos = Unit->GetActorLocation();
@@ -176,16 +237,25 @@ void ACustomAIController::AcquireTarget()
 
 	for (int i = 0; i < OutActors.Num(); i++)
 	{
-		if (!((ACombatTestCharacter*)OutActors[i])->UnitDataComponent->IsDead() && ((ACombatTestCharacter*)OutActors[i])->Team != Unit->Team)
+		if (!((ACombatTestCharacter *)OutActors[i])->UnitDataComponent->IsDead() && ((ACombatTestCharacter *)OutActors[i])->Team != Unit->Team)
 		{
-			dest = ((ACombatTestCharacter*)OutActors[i])->GetActorLocation();
+			dest = ((ACombatTestCharacter *)OutActors[i])->GetActorLocation();
 			if ((DistCurSquared = (dest - pos).SizeSquared()) < DistMinSquared)
 			{
-				Target = (ACombatTestCharacter*)OutActors[i];
+				NewTarget = (ACombatTestCharacter *)OutActors[i];
 				DistMinSquared = DistCurSquared;
 			}
 		}
 	}
+	Target = NewTarget;
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomAIController::CommandHoldPosition() // Can have parameters for aggro behavior
+{
+	Target = NULL;
+	CommandStop();
+	UnitCommand = EUC_HoldPosition;
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -194,6 +264,14 @@ void ACustomAIController::CommandStop()
 	Target = NULL;
 	StopMovement(); // If it is already not moving, it seems to not matter
 	UnitCommand = EUC_Idle; // The unit is idle now
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomAIController::CommandDisable()
+{
+	Target = NULL;
+	CommandStop(); // If it is already not moving, it seems to not matter
+	UnitCommand = EUC_Disable; // The unit is idle now
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -214,18 +292,10 @@ void ACustomAIController::CommandAttackMoveTo(FVector _MoveDestination)
 }
 //-------------------------------------------------------------------------------------------------
 
-void ACustomAIController::CommandAttackTarget(ACombatTestCharacter* _Target)
+void ACustomAIController::CommandAttackTarget(ACombatTestCharacter *_Target)
 {
 	Target = _Target;
 	UnitCommand = EUC_AttackTarget;
-}
-//-------------------------------------------------------------------------------------------------
-
-void ACustomAIController::CommandHoldPosition() // Can have parameters for aggro behavior
-{
-	Target = NULL;
-	CommandAttackMoveTo(Unit->GetActorLocation()); // A-move to current location, add checks for actual command to prevent actual movement and reaching destination
-	UnitCommand = EUC_HoldPosition;
 }
 //-------------------------------------------------------------------------------------------------
 
