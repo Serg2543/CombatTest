@@ -124,10 +124,10 @@ void ACombatTestCharacter::BeginPlay()
 	}
 	// Find the capsule mesh, that represents the body
 	// THere should be a better way
-	UCapsuleComponent* cap = FindComponentByClass<UCapsuleComponent>();
-	TArray<USceneComponent*> comp; 
-	TArray<USceneComponent*> comp2;
-	cap->GetChildrenComponents(false, comp);
+	CapsuleComponent = FindComponentByClass<UCapsuleComponent>();
+	TArray<USceneComponent *> comp; 
+	TArray<USceneComponent *> comp2;
+	CapsuleComponent->GetChildrenComponents(false, comp);
 	
 	UStaticMeshComponent *meshcomp = NULL; // The "body" is the mesh with corresponding sockets - find it and store for future reference
 	for (int i = 0; i < comp.Num(); i++)
@@ -175,6 +175,17 @@ void ACombatTestCharacter::BeginDestroy()
 }
 //-------------------------------------------------------------------------------------------------
 
+float ACombatTestCharacter::GetSize()
+{
+	return CapsuleComponent->GetUnscaledCapsuleRadius();
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACombatTestCharacter::SetSize(float _Size)
+{
+	CapsuleComponent->SetCapsuleRadius(_Size);
+}
+//-------------------------------------------------------------------------------------------------
 void ACombatTestCharacter::SetSelected(bool _Selected)
 {
 	SelectionCircle->SetVisibility(_Selected);

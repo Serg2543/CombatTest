@@ -34,8 +34,10 @@ bool UAbilityMeleeAttack::CanActivateNow(ABaseCharacterClass *_Target)
 
 UAbilityMeleeAttack::UAbilityMeleeAttack()
 {
-	Range = 200; // Default for test melee range
+	
+	Range = 100; // Default for test melee range
 	BaseDamage = 20;
+	AngleThreshold = 20 * 3.14159265 / 180;
 }
 //-------------------------------------------------------------------------------------------------
 

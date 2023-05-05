@@ -160,6 +160,18 @@ void ACustomPlayerController::SpawnAI_1()
 }
 //-------------------------------------------------------------------------------------------------
 
+void ACustomPlayerController::MWheelUp()
+{
+	GetPawn()->AddActorWorldOffset(ZoomSpeed * GetPawn()->GetActorForwardVector());
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACustomPlayerController::MWheelDowm()
+{
+	GetPawn()->AddActorWorldOffset(-ZoomSpeed * GetPawn()->GetActorForwardVector());
+}
+//-------------------------------------------------------------------------------------------------
+
 void ACustomPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -183,6 +195,9 @@ void ACustomPlayerController::SetupInputComponent()
 
 	InputComponent->BindAction("SpawnAI_0", IE_Pressed, this, &ACustomPlayerController::SpawnAI_0);
 	InputComponent->BindAction("SpawnAI_1", IE_Pressed, this, &ACustomPlayerController::SpawnAI_1);
+
+	InputComponent->BindAction("MWheelUp", IE_Pressed, this, &ACustomPlayerController::MWheelUp);
+	InputComponent->BindAction("MWheelDown", IE_Pressed, this, &ACustomPlayerController::MWheelDowm);
 }
 //-------------------------------------------------------------------------------------------------
 
@@ -190,5 +205,6 @@ ACustomPlayerController::ACustomPlayerController()
 {
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Hand;
+	ZoomSpeed = 100;
 }
 //-------------------------------------------------------------------------------------------------

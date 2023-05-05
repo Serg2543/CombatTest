@@ -16,32 +16,18 @@ void ACustomAIController::Tick_HoldPosition(float DeltaSeconds)
 {
 	// ??? The same, as Idle, but it will be checked later to prevent movement
 	AcquireTarget();
-	// Do not use for now
 }
 //-------------------------------------------------------------------------------------------------
 
 void ACustomAIController::Tick_Idle(float DeltaSeconds)
 {
 	AcquireTarget();
-	/*
-	// Old logic, but working
-
-	if (Target == NULL) AcquireTarget(); // Attempt to acquire a target
-	if (Target == NULL) // If there is still no target
-	{
-		StopMovement();
-	}
-	else
-	{
-		UnitCommand = EUC_AttackMove; // A-move to current position. 
-		// FIX: use MoveDestination to store current position, so the unit will chase the target, then return.
-	}
-	*/
 }
 //-------------------------------------------------------------------------------------------------
 
 void ACustomAIController::Tick_Move(float DeltaSeconds)
 {
+	MoveToLocation(MoveDestination);
 	// GetCharacterMovement()->IsMovementInProgress() is always false
 	if (GetMoveStatus() == EPathFollowingStatus::Idle) // Check, if destination is reached
 	{
@@ -52,6 +38,8 @@ void ACustomAIController::Tick_Move(float DeltaSeconds)
 
 void ACustomAIController::Tick_AttackMove(float DeltaSeconds)
 {
+	// FIX: not tested yet
+		// ??? Do not even need to use MoveTo - it will be handled by general logic later
 	AcquireTarget();
 	if (Target != NULL) // If a target is found
 	{
@@ -63,58 +51,13 @@ void ACustomAIController::Tick_AttackMove(float DeltaSeconds)
 		MoveTo(MoveDestination); // Resume normall movement
 		Tick_Move(DeltaSeconds);
 	}
-
-	/*
-			AcquireTarget(); // Even if there is a target already, reevaluate and pick a new one
-			if (Target == NULL) // Or invalid in any other way
-				MoveTo(); // Keep moving to destination. It will be the same, und updating it is not necessary, but it can still be updated anyway - it is the same, as updating moving target's location.
-			else
-				// No actions are necessary - the logic will be applied later, after any command finds a target
-	*/
-
-
-	/*
-	// Old logic, but working
-	//if (Target == NULL) 
-		AcquireTarget(); // Attempt to acquire a target
-		// Calling it every tick seems too much, but it makes sense for now
-
-	if (Target == NULL) // If there is still no target
-	{
-		Tick_Move(DeltaSeconds); // Keep moving normally
-	}
-	else
-	{
-		// Instead of resolving it here, add an attack order and resolve there (use a stack of orders, so if the target is dead, the unit will return to previous order - a-move)
-		FVector MoveLocation = Target->GetActorLocation();
-		
-		// TODO: use MoveDestination to store destination, so the unit will chase the target, then resume a-move.
-		// Abilities added
-		if (Ability->CanActivateNow(Target)) // If can use the planned ability right now, do it
-		{
-			StopMovement();
-			Ability->StartActivating(Target);
-		}
-		else
-		{
-			//SetFocalPoint(MoveLocation, EAIFocusPriority::Default); // Seems pointless - it is not updatedautomatically, so i have to do it manually
-			//	??? Movement can be an ability too, so it uses the same CanActivateNow()
-			if (!Unit->UnitDataComponent->bBusy) // Check, if the unit is busy executing an ability
-			{
-				//Unit->GetMovementComponent()->
-				MoveToLocation(MoveLocation);
-			}
-			// It calls OnMoveCompleted each time. In this case, it doesn't matter, but may be a problem at some point.
-			// Is it possible to determine the reason of MoveCompleted being called? It has some parameters. Getting to the closest point, if destination is unreachable, or timeout can be important. In other cases, manual check can be good enough.
-			// Do not use MoveToActor - sometimes destination will require updates every tick anyway (the unit will want to move not directly towards the target: anticipate and intercept, kite, etc). But in that case, reaching destination will be irrelevant - it will be a custom check anyway?
-		}
-	}
-	*/
 }
 //-------------------------------------------------------------------------------------------------
 
 void ACustomAIController::Tick_AttackTarget(float DeltaSeconds)
 {
+	// FIX: not tested yet
+		// ??? Do not even need to use MoveTo - it will be handled by general logic later
 	if (Target != NULL)
 	{
 		MoveTo(Target->GetActorLocation()); // Chase the target
@@ -210,7 +153,10 @@ void ACustomAIController::Tick(float DeltaSeconds)
 void ACustomAIController::RotateToTarget(float DeltaSeconds)
 {
 	FRotator rot = UKismetMathLibrary::FindLookAtRotation(Unit->GetActorForwardVector(), Target->GetActorLocation() - Unit->GetActorLocation());
-	float a = acos(FVector::DotProduct(Unit->GetActorForwardVector(), (Target->GetActorLocation() - Unit->GetActorLocation()).GetSafeNormal()));
+	// For some reason, regular acos sometimes returns values < -1000 (noticed in AbilityComponentBase->IsInAngle, but there it seems to work)
+	//float a = acos(FVector::DotProduct(Unit->GetActorForwardVector(), (Target->GetActorLocation() - Unit->GetActorLocation()).GetSafeNormal()));
+	float a = UKismetMathLibrary::Acos(FVector::DotProduct(Unit->GetActorForwardVector(), (Target->GetActorLocation() - Unit->GetActorLocation()).GetSafeNormal()));
+	
 	a += 0.01; // Prevent /0
 	float TurnSpeed = 0.5;
 	rot = FMath::RInterpTo(Unit->GetActorRotation(), rot, DeltaSeconds, TurnSpeed / (a / (2 * 3.14159265))); // It is scaled by angle, so un-scale it, so it becomes linear again
@@ -279,7 +225,7 @@ void ACustomAIController::CommandMoveTo(FVector _MoveDestination)
 {
 	Target = NULL;
 	MoveDestination = _MoveDestination;
-	MoveToLocation(_MoveDestination, UPathFollowingComponent::DefaultAcceptanceRadius, true, true, false, false, NULL, true);
+	//MoveToLocation(_MoveDestination, UPathFollowingComponent::DefaultAcceptanceRadius, true, true, false, false, NULL, true);
 	UnitCommand = EUC_Move;
 }
 //-------------------------------------------------------------------------------------------------

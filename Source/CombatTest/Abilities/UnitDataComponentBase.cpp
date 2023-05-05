@@ -84,5 +84,8 @@ UUnitDataComponentBase::UUnitDataComponentBase()
 	UAbilityMeleeAttack *AbilityMeleeAttack= CreateDefaultSubobject<UAbilityMeleeAttack>(TEXT("MeleeAttack")); // Have no idea, what exactly it does - copying the approach with the camera from dafault code above
 	//AddInstanceComponent(UnitDataComponent); // Worked without that, but seems like it is a proper thing to do (or something like this to let the engine to handle the component). Should the actor be the object, that calls this?
 	Abilities.Add(AbilityMeleeAttack); // ??? How to add it to a default array of components? Or simply manually destroy it?
+
+
+	CorpseTimer = 0.3;
 }
 //-------------------------------------------------------------------------------------------------

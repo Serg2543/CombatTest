@@ -22,6 +22,7 @@ class ACombatTestCharacter : public ACharacter
 {
 	GENERATED_BODY()
 protected:
+	UCapsuleComponent *CapsuleComponent;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 	virtual void BeginDestroy() override;
@@ -48,6 +49,9 @@ public:
 	ACustomAIController* CustomAIController; // Store it, so it doesn't have to be found every tick. Initialize in BeginPlay
 	UUnitDataComponentBase *UnitDataComponent = NULL;
 
+	// Size is the radius of the capsule component
+	void SetSize(float _Size);
+	float GetSize();
 	void SetSelected(bool _Selected);
 	ACombatTestCharacter();
 };

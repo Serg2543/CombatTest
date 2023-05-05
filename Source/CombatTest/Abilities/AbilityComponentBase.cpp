@@ -2,16 +2,11 @@
 
 
 #include "Abilities/AbilityComponentBase.h"
+
+#include "Kismet/KismetMathLibrary.h"
+
 #include "CombatTestCharacter.h"
 #include "Abilities/UnitDataComponentBase.h"
-
-UAbilityComponentBase::UAbilityComponentBase()
-{
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
-}
-//-------------------------------------------------------------------------------------------------
 
 void UAbilityComponentBase::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
@@ -73,12 +68,11 @@ bool UAbilityComponentBase::IsTargetInRange(ABaseCharacterClass* _Target)
 	if (_Target == NULL) return false; // Do not allow free-form attacks for now
 
 	// Check range
-	// TODO: factor in target's size
 
 	FVector v = _Target->GetActorLocation() - UnitOwner->GetActorLocation();
 	float Dist = v.Size();
 
-	if (Dist <= Range) // Target is in range
+	if (Dist <= Range + _Target->GetSize() + UnitOwner->GetSize()) // Target is in range, radius of each unit is factored in
 	{
 		return true;
 	}
@@ -96,8 +90,11 @@ bool UAbilityComponentBase::IsTargetInAngle(ABaseCharacterClass* _Target)
 	// TODO: factor in target's size
 	FVector v = _Target->GetActorLocation() - UnitOwner->GetActorLocation();
 	float Dist = v.Size();
+	float AngleFromSize = atan(_Target->GetSize() / Dist); // Any part of the target can be within the angle, not only the center. Or think that way: a ray from the unit in the forward direction has to hit the target.
 
-	if (FVector::DotProduct(UnitOwner->GetActorForwardVector(), v) / Dist > AngleThreshold_Cos) // Target is in front
+	// For some reason, regular acos sometimes returns values < -1000
+	//if (acos(FVector::DotProduct(UnitOwner->GetActorForwardVector(), v) / Dist) < AngleThreshold) // Target is in front, radius of each unit is factored in
+	if (UKismetMathLibrary::Acos(FVector::DotProduct(UnitOwner->GetActorForwardVector(), v) / Dist) < AngleFromSize + AngleThreshold) // Target is in front, radius of each unit is factored in
 	{
 		return true;
 	}
@@ -111,3 +108,16 @@ bool UAbilityComponentBase::CanActivateNow(ABaseCharacterClass* _Target)
 	// Other abilities can use special conditions
 	return UnitOwner->UnitDataComponent->bBusy;
 }
+//-------------------------------------------------------------------------------------------------
+
+UAbilityComponentBase::UAbilityComponentBase()
+{
+	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
+	// off to improve performance if you don't need them.
+	PrimaryComponentTick.bCanEverTick = true;
+
+	BaseDamage = 20;
+	Range = 100; // Default for test melee range
+	AngleThreshold = 0 * 3.14159265 / 180;
+}
+//-------------------------------------------------------------------------------------------------

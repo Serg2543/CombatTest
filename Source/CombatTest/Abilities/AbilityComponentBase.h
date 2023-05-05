@@ -14,11 +14,6 @@ class COMBATTEST_API UAbilityComponentBase : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
-	// Sets default values for this component's properties
-	
-	UAbilityComponentBase();
-
 protected:
 	virtual void ActivateAbility() {} //  // Actually apply the ability, manifest effects, spawn projectiles, etc. ??? Call it "Payload"?
 
@@ -36,10 +31,9 @@ public:
 	float TimeScale = 1; // Attack speed, etc
 	float TimeCounter = 0; // Current tick counter
 
-	float BaseDamage = 20;
-	float Range = 200; // Default for test melee range
-	float AngleThreshold = 10;
-	float AngleThreshold_Cos = cos(AngleThreshold / 180 * 3.14159265);
+	float BaseDamage;
+	float Range; // Default for test melee range
+	float AngleThreshold;
 
 	bool bPredelayInProgress = false; // Flag to determine, if attack has not connected yet, similar to bInProgress
 
@@ -75,4 +69,6 @@ public:
 	// ??? Projectile can be stored as SubclassOf properties, so they can be set in BPs
 
 	*/
+
+	UAbilityComponentBase();
 };

@@ -30,10 +30,14 @@ class COMBATTEST_API ACustomPlayerController : public APlayerController
 		void SpawnAI(int _Team);
 		void SpawnAI_0();
 		void SpawnAI_1();
-
+		
+		void MWheelUp();
+		void MWheelDowm();
+		
 		virtual void BeginPlay() override;
 		virtual void SetupInputComponent() override;
 	public:
+		float ZoomSpeed; // Set in constructor
 		ACustomHUD *HUD;
 		TArray<ACombatTestCharacter *> SelectedActors;
 
