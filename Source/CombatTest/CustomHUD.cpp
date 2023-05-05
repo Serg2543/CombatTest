@@ -3,6 +3,8 @@
 
 #include "CustomHUD.h"
 
+#include "CombatTestCharacter.h"
+
 void ACustomHUD::DrawHUD()
 {
 	if (bStartSelecting)

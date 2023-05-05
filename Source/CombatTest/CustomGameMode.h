@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "CombatTestCharacter.h"
 #include "CustomGameMode.generated.h"
 
 UCLASS(minimalapi)

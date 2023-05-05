@@ -1,29 +1,202 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "CombatTestCharacter.h"
-#include "UObject/ConstructorHelpers.h"
-#include "Camera/CameraComponent.h"
-#include "Components/DecalComponent.h"
+
+//#include "UObject/ConstructorHelpers.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/PlayerController.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "HeadMountedDisplayFunctionLibrary.h"
-#include "Engine/World.h"
+//#include "GameFramework/PlayerController.h"
+//#include "Engine/World.h"
 
-#include "Materials/Material.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
-#include "Navigation/PathFollowingComponent.h"
-#include "Kismet/KismetSystemLibrary.h"
+//#include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
+//#include "Kismet/KismetMathLibrary.h"
+
+#include "Components/WidgetComponent.h"
+#include "Components/ProgressBar.h"
+
 #include "CustomAIController.h"
 #include "CustomHUD.h"
 #include "CustomPlayerController.h"
+#include "CustomGameInstance.h"
+#include "Abilities/UnitDataComponentBase.h"
+#include "Abilities/AbilityMeleeAttack.h"
+
+void ACombatTestCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	/*
+	// Make the widget face the camera - it is not what it has to be
+	FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation();
+	FRotator rot = UKismetMathLibrary::FindLookAtRotation(WidgetComponent->GetComponentToWorld().GetLocation(), CameraLocation);
+	WidgetComponent->SetWorldRotation(rot);
+	*/
+	/*
+	// Doesn't work, even in the editor
+	FVector Scale = FVector(3, 3, 30);
+	WidgetComponent->SetWorldScale3D(Scale);
+	*/
+
+	if (WidgetHPBar)
+	{
+		float Percent = UnitDataComponent->HP / UnitDataComponent->HPMax;
+		if (Percent <= 0) Percent = 0;
+		WidgetHPBar->SetPercent(Percent);
+
+		// Scale by distance to the camera. Not precise scaling, but good enough.
+		FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->GetCameraLocation();
+		FVector WidgetLocation = WidgetComponent->GetComponentToWorld().GetLocation();
+
+		float Scale = 1650 / (WidgetLocation - CameraLocation).Size(); // Using empirical reference value
+		if (Scale > 1) Scale = 1;
+		FVector2D Scale2D = FVector2D(Scale, Scale);
+		UserWidget->SetRenderScale(Scale2D);
+		const float ScaleVisibilityThreshold = 0.25; // tmp
+		WidgetHPBar->SetVisibility(!UnitDataComponent->IsDead() && WidgetHPBar->Percent < 1 && Scale > ScaleVisibilityThreshold ? ESlateVisibility::Visible : ESlateVisibility::Hidden); // Show only if < 100%
+	}
+	else GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "WidgetHPBar == NULL");
+
+	// Pseudo-animation
+		// Weapon
+		float t = UnitDataComponent->Abilities[0]->TimeCounter;
+		float p = UnitDataComponent->Abilities[0]->Predelay;
+		float d = UnitDataComponent->Abilities[0]->TotalTime;
+		float x = 0; // Phase of predelay or backswing
+		if (!UnitDataComponent->bBusy)
+		{
+			//x = 0.5; // Default pose is with the weapon at an angle - it looks natural. There is a jump on the very 1st attack, but it is not important
+		}
+		else // If an attack is in progress, calculate the phase and corresponding rotation
+		{
+			if (t < p) x = t / p; // Predelay
+			else x = 1 - (t - p) / (d - p); // Recovery, in reverse direction
+			if (x < 0) x = 0;
+			else if (x > 1) x = 1;
+		}
+		//x = 0.5;
+		//x = t / l;
+	
+		FRotator rot = FRotator(-90 * x, 0, 0);
+		//WeaponComponent->SetRelativeRotation_Direct(rot);
+		CompHand_R->SetRelativeRotation(rot);
+
+		// Feet
+		// Keep moving, if the character is moving or current offset is non-zero, so it eventually gets to 0
+		x = sin(2 * 3.14159265 * MoveAnimTime / MoveAnimPeriod);
+		float SnapThrreshold = 1.1 * sin(2 * 3.14159265 * DeltaSeconds / MoveAnimPeriod);
+		if (x > SnapThrreshold || (CustomAIController && CustomAIController->GetMoveStatus() != EPathFollowingStatus::Idle))
+		{
+			MoveAnimTime += DeltaSeconds;
+		}
+		else
+		{
+			MoveAnimTime = 0;
+			x = 0;
+		}
+		const float Magnitude = 10;
+		CompFoot_L->SetRelativeLocation(Foot_L_BaseLoc + FVector(0, 0, -Magnitude * x));
+		CompFoot_R->SetRelativeLocation(Foot_R_BaseLoc + FVector(0, 0,  Magnitude * x));
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACombatTestCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Store AIController, so it doesn't have to be retreived every time
+	CustomAIController = Cast<ACustomAIController>(this->GetController());
+	if (CustomAIController == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CustomAIController == NULL");
+
+	// Store WidgetComponent for HP bar, so it doesn't have to be retreived every time
+	WidgetComponent = FindComponentByClass<UWidgetComponent>();
+	if (WidgetComponent == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "WidgetComponent == NULL");
+	else
+	{
+		UserWidget = WidgetComponent->GetUserWidgetObject();
+		if (UserWidget == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "UserWidget == NULL");
+		else
+		{
+			WidgetHPBar = (UProgressBar*)UserWidget->GetWidgetFromName(TEXT("PB_HPBar"));
+			if (WidgetHPBar == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "WidgetHPBar == NULL");
+			else WidgetHPBar->SetVisibility(ESlateVisibility::Hidden); // Hide by default at full HP
+		}
+	}
+	// Find the capsule mesh, that represents the body
+	// THere should be a better way
+	CapsuleComponent = FindComponentByClass<UCapsuleComponent>();
+	TArray<USceneComponent *> comp; 
+	TArray<USceneComponent *> comp2;
+	CapsuleComponent->GetChildrenComponents(false, comp);
+	
+	UStaticMeshComponent *meshcomp = NULL; // The "body" is the mesh with corresponding sockets - find it and store for future reference
+	for (int i = 0; i < comp.Num(); i++)
+	{
+		meshcomp = Cast<UStaticMeshComponent>(comp[i]);
+		if (meshcomp != NULL)
+		{
+			if (meshcomp->HasAnySockets())
+			{
+				CompBody = meshcomp;
+				CompBody->GetChildrenComponents(false, comp2);
+				if (comp2.Num() > 0)
+				{
+					CompHead = Cast<UStaticMeshComponent>(comp2[0]);
+					CompFoot_L = Cast<UStaticMeshComponent>(comp2[1]);
+					CompFoot_R = Cast<UStaticMeshComponent>(comp2[2]);
+					CompHand_L = Cast<UStaticMeshComponent>(comp2[3]);
+					CompHand_R = Cast<UStaticMeshComponent>(comp2[4]);
+
+					Foot_L_BaseLoc = CompFoot_L->GetRelativeLocation();
+					Foot_R_BaseLoc = CompFoot_R->GetRelativeLocation();
+				}
+			}
+			else // FIX: For now, the only other mesh is selection circle, but it is lazy
+			{
+				SelectionCircle = meshcomp;
+			}
+		}
+	}
+	
+	if (CompBody == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CompBody == NULL");
+	if (CompHead == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CompHead == NULL");
+	if (CompFoot_L == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CompFoot_L == NULL");
+	if (CompFoot_R == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CompFoot_R == NULL");
+	if (CompHand_L == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CompHand_L == NULL");
+	if (CompHand_R == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CompHand_R == NULL");
+
+	// Initialize materials for team colors
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACombatTestCharacter::BeginDestroy()
+{
+	Super::BeginDestroy();
+}
+//-------------------------------------------------------------------------------------------------
+
+float ACombatTestCharacter::GetSize()
+{
+	return CapsuleComponent->GetUnscaledCapsuleRadius();
+}
+//-------------------------------------------------------------------------------------------------
+
+void ACombatTestCharacter::SetSize(float _Size)
+{
+	CapsuleComponent->SetCapsuleRadius(_Size);
+}
+//-------------------------------------------------------------------------------------------------
+void ACombatTestCharacter::SetSelected(bool _Selected)
+{
+	SelectionCircle->SetVisibility(_Selected);
+}
+//-------------------------------------------------------------------------------------------------
 
 ACombatTestCharacter::ACombatTestCharacter()
 {
+	// From the template
 	// Set size for player capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	//GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
 	// Don't rotate character to camera direction
 	bUseControllerRotationPitch = false;
@@ -36,203 +209,36 @@ ACombatTestCharacter::ACombatTestCharacter()
 	GetCharacterMovement()->bConstrainToPlane = true;
 	GetCharacterMovement()->bSnapToPlaneAtStart = true;
 
-	// Create a camera boom...
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->SetUsingAbsoluteRotation(true); // Don't want arm to rotate when character does
-	CameraBoom->TargetArmLength = 800.f;
-	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
-	CameraBoom->bDoCollisionTest = false; // Don't want to pull camera in when it collides with level
-
-	// Create a camera...
-	TopDownCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
-	TopDownCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	TopDownCameraComponent->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
-
-	// Create a decal in the world to show the cursor's location
-	CursorToWorld = CreateDefaultSubobject<UDecalComponent>("CursorToWorld");
-	CursorToWorld->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UMaterial> DecalMaterialAsset(TEXT("Material'/Game/TopDownCPP/Blueprints/M_Cursor_Decal.M_Cursor_Decal'"));
-	if (DecalMaterialAsset.Succeeded())
-	{
-		CursorToWorld->SetDecalMaterial(DecalMaterialAsset.Object);
-	}
-	CursorToWorld->DecalSize = FVector(16.0f, 32.0f, 32.0f);
-	CursorToWorld->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f).Quaternion());
-	CursorToWorld->SetVisibility(false);
-
 	// Activate ticking in order to update the cursor every frame.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned; // VOODOO: required for MoveTo to work
-}
+	// Custom code
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
-void ACombatTestCharacter::BeginDestroy()
-{
-	Super::BeginDestroy();
-}
+	// Initializae UitData component
+	UnitDataComponent = CreateDefaultSubobject<UUnitDataComponentBase>(TEXT("UnitData"));
+	//UnitDataComponent->RegisterComponent();//ma->RegisterComponent(); // Exception
+	//UnitDataComponent->UnitOwner = this;
 
-void ACombatTestCharacter::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
+	//UnitDataComponent->SetupAttachment(RootComponent);
+	AddInstanceComponent(UnitDataComponent);
+	UnitDataComponent->SetOwner(this);
 
-	if (IsDead)
-	{
-		CorpseTimer -= DeltaSeconds;
-		if (CorpseTimer <= 0) Destroy(); // Can use another phase: fade out, fall through the floor, etc
-	}
-	else
-	{
-		/*
-		FString s = "";
-		if (CustomAIController->GetMoveStatus() == EPathFollowingStatus::Idle) s = "Idle";
-		else if (CustomAIController->GetMoveStatus() == EPathFollowingStatus::Moving) s = "Moving";
-		else if (CustomAIController->GetMoveStatus() == EPathFollowingStatus::Paused) s = "Paused";
-		else if (CustomAIController->GetMoveStatus() == EPathFollowingStatus::Waiting) s = "Waiting";
-		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, s);
-		*/
-
-		if (MoveCommand) // Check, if a manual move order was issued
-		{
-			// GetCharacterMovement()->IsMovementInProgress() is always false
-			if (CustomAIController->GetMoveStatus() == EPathFollowingStatus::Idle) // Check, if destination is reached
-			{
-				MoveCommand = false; // The unit is idle now
-				Target = NULL; // Reset the target, so the closest one can be reacquired
-			}
-		}
-
-		if (!MoveCommand)
-		{
-			if (Target && (Target->IsDead || Target->IsPendingKill())) Target = NULL; // Check, if the target is dead in the game or destroyed in the engine
-			if (Target == NULL) AcquireTarget();
-			if (Target == NULL) // If there is still no target
-			{
-				// Do idle stuff
-				CustomAIController->StopMovement();
-			}
-			else
-			{
-				FVector MoveLocation = Target->GetActorLocation();
-
-				float MeleeRange = 200;
-				if ((MoveLocation - GetActorLocation()).SizeSquared() < MeleeRange * MeleeRange) // If actors get close, destroy one of the actors
-				{
-					int coin = FMath::RandRange(0, 1);
-					ACombatTestCharacter* UnitToKill;
-					if (coin) UnitToKill = Target;
-					else UnitToKill = this;
-					UnitToKill->Kill();
-				}
-				else
-				{
-					CustomAIController->MoveToLocation(MoveLocation);
-					/*
-					//UAIBlueprintHelperLibrary::SimpleMoveToLocation(GetController(), MoveLocation);
-					//CustomAIController->MoveToLocation(MoveLocation, UPathFollowingComponent::DefaultAcceptanceRadius, true, true, false, false, NULL, true);
-					
-					// It calls OnMoveCompleted each time. In this case, it doesn't matter, but may be a problem at some point.
-					// Is it possible to determine the reason of MoveCompleted being called? It has some parameters. Getting to the closest point, if destination is unreachable, or timeout can be important. In other cases, manual check can be good enough.
-					// Do not use MoveToActor - sometimes destination will require updates every tick anyway (the unit will want to move not directly towards the target: anticipate and intercept, kite, etc). But in that case, reaching destination will be irrelevant - it will be a custom check anyway?
-					*/
-				}
-			}
-		}
-	}
-}
-
-void ACombatTestCharacter::SetSelected(bool _Selected)
-{
-	CursorToWorld->SetVisibility(_Selected);
-}
-
-void ACombatTestCharacter::Kill()
-{
-	// Remove the actor from selection lists
-	ACustomPlayerController* CustomPlayerController = (ACustomPlayerController*)UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	ACustomHUD* CustomHUD = (ACustomHUD*)CustomPlayerController->GetHUD();
-	CustomPlayerController->SelectedActors.Remove(this);
-	CustomHUD->SelectedActorsDragged.Remove(this);
-
-
-	// Disable AI
-	CustomAIController->StopMovement();
-	CustomAIController->UnPossess();
-	CustomAIController->Destroy(); // Destroy the controller explicitly, because it it is not automatically destroyed after Unpossess()
-	IsDead = true;
-	// Turn off collision with units
-	SetActorEnableCollision(false);
-	// Change visual appearance
-	MeshBody->SetMaterial(0, MaterialBodyDead); // It causes an exception, when a lot of units are spawned
-	// Use a proper death animation
-
-	//Destroy(); // The simplest handling
-}
-
-void ACombatTestCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-
-	CustomAIController = Cast<ACustomAIController>(this->GetController());
-	if (CustomAIController == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "CustomAIController == NULL");
-
-	// Initialize materials for team colors
 	/*
-	// Tutorial for dynamic materials: https://www.youtube.com/watch?v=AsAx9HObtIY
-	// FIX: Don't have to be in each instance of an actor, use GameInstance
-	// Had an exception in KIll() {... MeshBody->SetMaterial(0, MaterialBodyDead); ...} after spawning a lot of unit
-	// https://couchlearn.com/how-to-use-the-game-instance-in-unreal-engine-4/
+	// Tried to load dynamically, like the decal in the template example, but it seems to not work
+	// Add #include "UObject/ConstructorHelpers.h"
+	SelectionCircle = CreateDefaultSubobject<UStaticMeshComponent>("SelectionCircle");
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SelectionCircleStaticMesh(TEXT("StaticMesh'/Game/TopDownCPP/GrayboxCharacter/Selection_GB.Selection_GB'"));
+	if (SelectionCircleStaticMesh.Succeeded())
+	{
+		SelectionCircle->SetStaticMesh(SelectionCircleStaticMesh.Object);
+	}
+	static ConstructorHelpers::FObjectFinder<UMaterial> SelectionCircleMaterial(TEXT("Material'/Game/TopDownCPP/GrayboxCharacter/Materials/M_Selection.M_Selection'"));
+	if (SelectionCircleMaterial.Succeeded())
+	{
+		SelectionCircle->SetMaterial(0, SelectionCircleMaterial.Object);
+	}
 	*/
-
-	MeshBody = FindComponentByClass<USkeletalMeshComponent>();
-	if (MeshBody == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Mesh == NULL");
-	else
-	{
-		UMaterialInterface* Mat = MeshBody->GetMaterial(0);
-		if (Mat == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Static material == NULL");
-		else
-		{
-			MaterialBodyTeam0 = UMaterialInstanceDynamic::Create(MeshBody->GetMaterial(0), NULL);
-			if (MaterialBodyTeam0 == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "MaterialBodyTeam0 == NULL");
-			else MaterialBodyTeam0->SetVectorParameterValue(FName(TEXT("BodyColor")), FLinearColor(0.9f, 0.1f, 0.1f));
-
-			MaterialBodyTeam1 = UMaterialInstanceDynamic::Create(MeshBody->GetMaterial(0), NULL);
-			if (MaterialBodyTeam1 == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "MaterialBodyTeam1 == NULL");
-			else MaterialBodyTeam1->SetVectorParameterValue(FName(TEXT("BodyColor")), FLinearColor(0.1f, 0.1f, 0.9f));
-			
-			MaterialBodyDead = UMaterialInstanceDynamic::Create(MeshBody->GetMaterial(0), NULL);
-			if (MaterialBodyDead == NULL) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "MaterialBodyDead == NULL");
-			else MaterialBodyDead->SetVectorParameterValue(FName(TEXT("BodyColor")), FLinearColor(0.4f, 0.4f, 0.0f));
-		}
-	}
 }
-
-void ACombatTestCharacter::AcquireTarget()
-{
-	TArray<AActor*> OutActors;
-	TArray< AActor* > ActorsToIgnore;
-	ActorsToIgnore.Add(this);
-
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACombatTestCharacter::StaticClass(), OutActors); // Bruteforce approach
-
-	if (OutActors.Num() == 0) GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, "Find actors - no results");
-	Target = NULL;
-	float DistMinSquared = AcquisitionRange * AcquisitionRange;
-	float DistCurSquared;
-	FVector pos = GetActorLocation();
-	FVector dest;
-
-	for (int i = 0; i < OutActors.Num(); i++)
-	{
-		if (!((ACombatTestCharacter*)OutActors[i])->IsDead && ((ACombatTestCharacter*)OutActors[i])->Team != Team)
-		{
-			dest = ((ACombatTestCharacter*)OutActors[i])->GetActorLocation();
-			if ((DistCurSquared = (dest - pos).SizeSquared()) < DistMinSquared)
-			{
-				Target = (ACombatTestCharacter*)OutActors[i];
-				DistMinSquared = DistCurSquared;
-			}
-		}
-	}
-}
+//-------------------------------------------------------------------------------------------------

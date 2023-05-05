@@ -1,9 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "CustomGameMode.h"
+#include "UObject/ConstructorHelpers.h"
+
 #include "CustomPlayerController.h"
 #include "CombatTestCharacter.h"
-#include "UObject/ConstructorHelpers.h"
 
 ACustomGameMode::ACustomGameMode()
 {

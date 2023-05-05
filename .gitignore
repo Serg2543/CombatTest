@@ -1,3 +1,10 @@
+# Ignore everything, except custom assets
+Content/**
+!Content/**/
+!Content/Geometry/**
+!Content/Mannequin/**
+!Content/TopDownCPP/**
+
 # Visual Studio 2015 user specific files
 .vs/
 

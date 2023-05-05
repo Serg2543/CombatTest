@@ -4,39 +4,42 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "CustomHUD.h"
-#include "CustomGameMode.h"
 #include "CustomPlayerController.generated.h"
 
-/**
- * 
- */
+class ACombatTestCharacter;
+class ACustomHUD;
+
 UCLASS()
 class COMBATTEST_API ACustomPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
-	public:
-		ACustomHUD *HUD;
-
-		TArray<ACombatTestCharacter*> SelectedActors;
-
-		virtual void BeginPlay() override;
-		virtual void SetupInputComponent() override;
-
-		ACustomPlayerController();
-
-		
 	protected:
+
+
 		FVector LastHit;
 
-		void SelectionPressed();
-		void SelectionReleased();
-		void MoveReleased();
+		void LButtonPressed();
+		void LButtonReleased();
+		void RButtonPressed();
 
-		ACustomGameMode* GameMode;
+		void CommandAttackMoveTo(); // Hotkey, that initiates the command. Actual command is confirmed in LButtonReleased
+		void CommandStop(); // Hotkey, instant results
+		void CommandHoldPosition(); // Hotkey, instant results
+		void CommandDisable(); // Hotkey, instant results
 		
 		void SpawnAI(int _Team);
 		void SpawnAI_0();
 		void SpawnAI_1();
+		
+		void MWheelUp();
+		void MWheelDowm();
+		
+		virtual void BeginPlay() override;
+		virtual void SetupInputComponent() override;
+	public:
+		float ZoomSpeed; // Set in constructor
+		ACustomHUD *HUD;
+		TArray<ACombatTestCharacter *> SelectedActors;
+
+		ACustomPlayerController();
 };
